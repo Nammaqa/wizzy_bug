@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "@types/nodemailer": "^8.0.1"
+  },
+  "dependencies": {
+    "resend": "^6.19.0"
+  }
+}

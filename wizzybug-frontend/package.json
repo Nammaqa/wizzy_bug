@@ -1,0 +1,29 @@
+{
+  "name": "wizzyBug",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm:client\" \"npm:server\"",
+    "client": "vite --host 0.0.0.0",
+    "server": "npm --prefix ../wizzybug-backend run dev",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "bcryptjs": "latest",
+    "concurrently": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "jsonwebtoken": "latest",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "lucide-react": "latest",
+    "mongoose": "latest",
+    "multer": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-router-dom": "latest",
+    "vite": "latest",
+    "xlsx-js-style": "^1.2.0"
+  }
+}
