@@ -22,7 +22,7 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
       - key: MAIL_SERVICE_URL
-        sync: false
+        value: https://wizzybugmail.vercel.app/api/index
       - key: MAIL_USER
         sync: false
       - key: MAIL_PASS
