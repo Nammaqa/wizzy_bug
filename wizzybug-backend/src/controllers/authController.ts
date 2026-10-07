@@ -299,8 +299,8 @@ export const acceptInvite = async (req: Request, res: Response): Promise<void> =
   try {
     const { token, password } = req.body;
 
-    if (exceedsUserFieldLimit(password)) {
-      res.status(400).json({ message: 'Password must be 40 characters or fewer' });
+    if (!isStrongPassword(password)) {
+      res.status(400).json({ message: 'Password must be 6 to 40 characters and include uppercase, lowercase, number, and special character' });
       return;
     }
 

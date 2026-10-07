@@ -2218,8 +2218,77 @@ select {
   margin-top: 17px;
 }
 
+.inviteConfirmation {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 14px;
+  width: min(420px, 100%);
+  padding: 30px;
+  text-align: center;
+}
+
+.inviteConfirmationIcon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--purple);
+  background: var(--panel2);
+}
+
+.inviteConfirmation h3,
+.inviteConfirmation p {
+  margin: 0;
+}
+
+.inviteConfirmation p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.inviteConfirmationEmail {
+  overflow-wrap: anywhere;
+}
+
+.inviteDeliveryStatus {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.inviteDeliveryStatus.sent {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+}
+
+.inviteDeliveryStatus.notSent {
+  color: var(--orange);
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
+}
+
+.inviteConfirmation .primary {
+  width: 100%;
+  margin-top: 6px;
+}
+
 .profileForm input {
   margin-top: 7px;
+}
+
+.passwordRequirements {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0 18px;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.passwordRequirements .met {
+  color: var(--green);
 }
 
 .descriptionEditor {

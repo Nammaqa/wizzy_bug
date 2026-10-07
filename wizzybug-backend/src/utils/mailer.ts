@@ -343,6 +343,16 @@ const escapeHtml = (value: string): string =>
     "'": "&#39;",
   })[character] || character);
 
+const PRIORITY_EMAIL_LABELS: Record<string, string> = {
+  critical: "P1-Immediate Fix",
+  high: "P2-High",
+  medium: "P3-Medium",
+  low: "P4-Low",
+};
+
+const getPriorityEmailLabel = (priority: string): string =>
+  PRIORITY_EMAIL_LABELS[priority.toLowerCase()] || priority;
+
 export const sendBugAssignmentEmail = async (opts: {
   to: string;
   assigneeName: string;
@@ -378,13 +388,14 @@ export const sendBugAssignmentEmail = async (opts: {
   const actionMessage = isUpdate
     ? `${opts.assignedBy} updated a bug assigned to you in WizzyBug.`
     : `${opts.assignedBy} assigned a bug to you in WizzyBug.`;
+  const priorityLabel = getPriorityEmailLabel(opts.priority);
   const body = `Hi ${opts.assigneeName},
 
 ${actionMessage}
 
 Bug: ${opts.bugId} - ${opts.title}
 Project: ${project}
-Priority: ${opts.priority}
+Priority: ${priorityLabel}
 Severity: ${opts.severity}
 ${changeSummary}
 
@@ -396,7 +407,7 @@ Open WizzyBug: ${opts.appUrl}`;
     isUpdate && opts.changedFields?.length
       ? `<p><b>Changed details:</b> ${opts.changedFields.map(escapeHtml).join(", ")}</p>`
       : "";
-  const html = `<h2>${isUpdate ? "Bug updated" : "Bug assigned to you"}</h2><p>Hi ${escapeHtml(opts.assigneeName)},</p><p><b>${escapeHtml(opts.assignedBy)}</b> ${isUpdate ? "updated a bug assigned to you" : "assigned a bug to you"} in WizzyBug.</p><table><tr><td><b>Bug</b></td><td>${escapeHtml(opts.bugId)} - ${escapeHtml(opts.title)}</td></tr><tr><td><b>Project</b></td><td>${escapeHtml(project)}</td></tr><tr><td><b>Priority</b></td><td>${escapeHtml(opts.priority)}</td></tr><tr><td><b>Severity</b></td><td>${escapeHtml(opts.severity)}</td></tr></table>${changesHtml}<h3>Description</h3><p>${escapeHtml(opts.description || "No description provided.").replace(/\n/g, "<br>")}</p><p><a href="${escapeHtml(opts.appUrl)}">Open WizzyBug</a></p>`;
+  const html = `<h2>${isUpdate ? "Bug updated" : "Bug assigned to you"}</h2><p>Hi ${escapeHtml(opts.assigneeName)},</p><p><b>${escapeHtml(opts.assignedBy)}</b> ${isUpdate ? "updated a bug assigned to you" : "assigned a bug to you"} in WizzyBug.</p><table><tr><td><b>Bug</b></td><td>${escapeHtml(opts.bugId)} - ${escapeHtml(opts.title)}</td></tr><tr><td><b>Project</b></td><td>${escapeHtml(project)}</td></tr><tr><td><b>Priority</b></td><td>${escapeHtml(priorityLabel)}</td></tr><tr><td><b>Severity</b></td><td>${escapeHtml(opts.severity)}</td></tr></table>${changesHtml}<h3>Description</h3><p>${escapeHtml(opts.description || "No description provided.").replace(/\n/g, "<br>")}</p><p><a href="${escapeHtml(opts.appUrl)}">Open WizzyBug</a></p>`;
 
   if (smtpTransport) {
     try {

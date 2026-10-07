@@ -6,10 +6,19 @@ export default function AcceptInvite() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState("");
+  const passwordChecks = {
+    length: password.length >= 6 && password.length <= 40,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+  };
+  const passwordValid = Object.values(passwordChecks).every(Boolean);
   const token = new URLSearchParams(window.location.search).get("token");
 
   const handleAccept = async (event) => {
     event.preventDefault();
+    if (!passwordValid) return;
     setStatus("Accepting...");
     try {
       const data = await apiFetch("/auth/accept-invite", {
@@ -66,10 +75,27 @@ export default function AcceptInvite() {
               </button>
             </div>
           </label>
+          <ul className="passwordRequirements" aria-live="polite">
+            <li className={passwordChecks.length ? "met" : ""}>
+              6-40 characters
+            </li>
+            <li className={passwordChecks.uppercase ? "met" : ""}>
+              At least one uppercase letter
+            </li>
+            <li className={passwordChecks.lowercase ? "met" : ""}>
+              At least one lowercase letter
+            </li>
+            <li className={passwordChecks.number ? "met" : ""}>
+              At least one number
+            </li>
+            <li className={passwordChecks.special ? "met" : ""}>
+              At least one special character
+            </li>
+          </ul>
           <button
             className="primary"
             type="submit"
-            disabled={!token || status === "Accepting..."}
+            disabled={!token || !passwordValid || status === "Accepting..."}
           >
             Accept & Join
           </button>

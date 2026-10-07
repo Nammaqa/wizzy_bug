@@ -88,6 +88,28 @@ const defectTypeOptions = [
   "Other",
 ];
 
+const buildEditForm = (bug) => ({
+  title: bug.title || "",
+  desc: bug.desc || "",
+  severity: bug.severity || "Minor",
+  priority: bug.priority || SEVERITY_TO_PRIORITY[bug.severity] || "medium",
+  moduleFeatureName: bug.moduleFeatureName || "",
+  environment: bug.environment || "",
+  buildAppVersion: bug.buildAppVersion || "",
+  releaseVersion: bug.releaseVersion || "",
+  defectType: defectTypeOptions.includes(bug.defectType)
+    ? bug.defectType
+    : bug.defectType
+      ? "Other"
+      : "",
+  reproductionRate: bug.reproductionRate || "",
+  expectedResult: bug.expectedResult || "",
+  actualResult: bug.actualResult || "",
+  typeOfApplication: bug.typeOfApplication || "",
+  browser: bug.browser || "",
+  browserVersion: bug.browserVersion || "",
+});
+
 function buildTimeline(bug) {
   const historyItems = (bug.history || []).map((h) => ({
     kind: "history",
@@ -128,50 +150,16 @@ function Detail({
   const [editing, setEditing] = useState(false);
   const [attachmentsToUpload, setAttachmentsToUpload] = useState([]);
   const [attachmentUploadError, setAttachmentUploadError] = useState("");
-  const [otherDefectType, setOtherDefectType] = useState("");
-  const [editForm, setEditForm] = useState({
-    title: bug.title || "",
-    desc: bug.desc || "",
-    severity: bug.severity || "Minor",
-    priority: bug.priority || SEVERITY_TO_PRIORITY[bug.severity] || "medium",
-    moduleFeatureName: bug.moduleFeatureName || "",
-    environment: bug.environment || "",
-    buildAppVersion: bug.buildAppVersion || "",
-    releaseVersion: bug.releaseVersion || "",
-    defectType: defectTypeOptions.includes(bug.defectType)
-      ? bug.defectType
-      : bug.defectType
-        ? "Other"
-        : "",
-    reproductionRate: bug.reproductionRate || "",
-    expectedResult: bug.expectedResult || "",
-    actualResult: bug.actualResult || "",
-    typeOfApplication: bug.typeOfApplication || "",
-    browser: bug.browser || "",
-    browserVersion: bug.browserVersion || "",
-  });
+  const [otherDefectType, setOtherDefectType] = useState(() =>
+    defectTypeOptions.includes(bug.defectType) ? "" : bug.defectType || "",
+  );
+  const [editForm, setEditForm] = useState(() => buildEditForm(bug));
 
   useEffect(() => {
     if (editing) return;
 
     setNext(bug.status);
-    setEditForm({
-      title: bug.title || "",
-      desc: bug.desc || "",
-      severity: bug.severity || "Minor",
-      priority: bug.priority || SEVERITY_TO_PRIORITY[bug.severity] || "medium",
-      moduleFeatureName: bug.moduleFeatureName || "",
-      environment: bug.environment || "",
-      buildAppVersion: bug.buildAppVersion || "",
-      releaseVersion: bug.releaseVersion || "",
-      defectType: bug.defectType || "",
-      reproductionRate: bug.reproductionRate || "",
-      expectedResult: bug.expectedResult || "",
-      actualResult: bug.actualResult || "",
-      typeOfApplication: bug.typeOfApplication || "",
-      browser: bug.browser || "",
-      browserVersion: bug.browserVersion || "",
-    });
+    setEditForm(buildEditForm(bug));
     setOtherDefectType(
       defectTypeOptions.includes(bug.defectType) ? "" : bug.defectType || "",
     );
@@ -181,6 +169,18 @@ function Detail({
 
   const canReassign = true;
   const timeline = buildTimeline(bug);
+  const originalEditForm = buildEditForm(bug);
+  const hasEditChanges =
+    Object.keys(originalEditForm).some(
+      (field) =>
+        field !== "defectType" &&
+        String(editForm[field] ?? "") !==
+        String(originalEditForm[field] ?? ""),
+    ) ||
+    (editForm.defectType === "Other"
+      ? otherDefectType.trim()
+      : editForm.defectType) !== (bug.defectType || "") ||
+    attachmentsToUpload.length > 0;
   const updateEditField = (field, value) => {
     setEditForm((current) => ({ ...current, [field]: value }));
   };
@@ -685,7 +685,11 @@ function Detail({
                     </small>
                   )}
                 </label>
-                <button className="primary" type="submit" disabled={busy}>
+                <button
+                  className="primary"
+                  type="submit"
+                  disabled={busy || !hasEditChanges}
+                >
                   {busy ? "Saving..." : "Save Defect"}
                 </button>
               </form>

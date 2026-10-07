@@ -123,3 +123,52 @@ test('sends verification emails with a Verify Email link', async () => {
     restoreEnvironment(saved);
   }
 });
+
+test('formats assignment email priorities as P1-P4 labels', async () => {
+  const saved = saveEnvironment();
+  const originalFetch = global.fetch;
+  clearMailerEnvironment();
+  process.env.MAIL_SERVICE_URL = 'https://mail.example.com/send';
+  process.env.MAIL_FROM = 'WizzyBug <bugs@example.com>';
+  const requests = [];
+  global.fetch = async (url, options) => {
+    requests.push({ url: String(url), options });
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+
+  try {
+    const { sendBugAssignmentEmail } = require('../dist/utils/mailer.js');
+    const labels = [
+      ['critical', 'P1-Immediate Fix'],
+      ['high', 'P2-High'],
+      ['medium', 'P3-Medium'],
+      ['low', 'P4-Low'],
+    ];
+
+    for (const [priority, label] of labels) {
+      await sendBugAssignmentEmail({
+        to: 'assignee@example.com',
+        assigneeName: 'Jane Doe',
+        assignedBy: 'Alex',
+        bugId: 'BUG-1',
+        title: 'Assignment email formatting',
+        description: 'Regression test',
+        projectName: 'WizzyBug',
+        priority,
+        severity: 'Major',
+        appUrl: 'https://app.example.com',
+      });
+
+      const payload = JSON.parse(requests.at(-1).options.body);
+      assert.match(payload.body, new RegExp(`Priority: ${label}`));
+      assert.match(payload.html, new RegExp(`<td>${label}<\\/td>`));
+      assert.doesNotMatch(payload.body, new RegExp(`Priority: ${priority}$`, 'm'));
+    }
+  } finally {
+    global.fetch = originalFetch;
+    restoreEnvironment(saved);
+  }
+});
