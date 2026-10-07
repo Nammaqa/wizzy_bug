@@ -84,7 +84,15 @@ function parseAppRoute(pathname, isAdminPage) {
     return { page: "bugs", projectId: null, bugId: segments[1] };
   }
 
-  const validPages = ["dashboard", "bugs", "report", "users", "profile", "assign", "projects"];
+  const validPages = [
+    "dashboard",
+    "bugs",
+    "report",
+    "users",
+    "profile",
+    "assign",
+    "projects",
+  ];
   const page = validPages.includes(segments[0]) ? segments[0] : "dashboard";
   return { page, projectId: null, bugId: null };
 }
@@ -117,7 +125,9 @@ function App({ isAdminPage = false }) {
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedId, setSelectedId] = useState(initialRoute.bugId);
-  const [selectedProjectId, setSelectedProjectId] = useState(initialRoute.projectId);
+  const [selectedProjectId, setSelectedProjectId] = useState(
+    initialRoute.projectId,
+  );
   const [projectFilter, setProjectFilter] = useState(null);
   const [menu, setMenu] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
@@ -227,7 +237,11 @@ function App({ isAdminPage = false }) {
     const refreshWorkspaceData = () => {
       if (document.visibilityState !== "visible" || refreshInProgress) return;
       refreshInProgress = true;
-      Promise.all([refreshTickets(), refreshUsers(), refreshProjects()]).finally(() => {
+      Promise.all([
+        refreshTickets(),
+        refreshUsers(),
+        refreshProjects(),
+      ]).finally(() => {
         refreshInProgress = false;
       });
     };
@@ -260,7 +274,9 @@ function App({ isAdminPage = false }) {
     );
 
   const normalizePriority = (priority) => {
-    const value = String(priority || "").trim().toLowerCase();
+    const value = String(priority || "")
+      .trim()
+      .toLowerCase();
     if (["critical", "high", "medium", "low"].includes(value)) return value;
     if (value.startsWith("p1")) return "critical";
     if (value.startsWith("p2")) return "high";
@@ -270,7 +286,9 @@ function App({ isAdminPage = false }) {
   };
 
   const addBug = async (b) => {
-    const mappedPriority = normalizePriority(b.priority || SEVERITY_TO_PRIORITY[b.severity] || "medium");
+    const mappedPriority = normalizePriority(
+      b.priority || SEVERITY_TO_PRIORITY[b.severity] || "medium",
+    );
     const formData = new FormData();
     formData.append("title", b.title);
     formData.append("description", b.desc);
@@ -556,7 +574,7 @@ function App({ isAdminPage = false }) {
         <div className="content">
           {loadingData && bugs.length === 0 ? (
             <div className="muted" style={{ padding: 40, textAlign: "center" }}>
-              Loading your workspace
+              Loading your workspace...
             </div>
           ) : (
             content
