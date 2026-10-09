@@ -1798,10 +1798,18 @@ select {
   flex-wrap: wrap;
 }
 
+.assignBugsTable .assignOptionLine {
+  flex-wrap: nowrap;
+}
+
 .assignOptionName {
   font-weight: 600;
   font-size: 13px;
   color: var(--text);
+}
+
+.assignBugsTable .assignOptionName {
+  white-space: nowrap;
 }
 
 .assignOptionRole {
