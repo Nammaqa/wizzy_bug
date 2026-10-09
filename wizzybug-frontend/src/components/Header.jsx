@@ -96,7 +96,10 @@ function Header({
   const bugNotifications = bugs
     .filter((bug) => isAssignedToUser(bug, user))
     .map((bug) => {
-      const updatedAt = bug.updatedAt || bug.createdAt;
+      const assignmentTime = bug.history
+        ?.filter((entry) => entry.type === "assignment")
+        .at(-1)?.createdAt;
+      const updatedAt = assignmentTime || bug.updatedAt || bug.createdAt;
       return {
         type: "bug",
         id: `bug-${bug.rawId || bug.id}-${updatedAt || ""}`,
@@ -248,4 +251,3 @@ function Header({
 }
 
 export default Header;
-
