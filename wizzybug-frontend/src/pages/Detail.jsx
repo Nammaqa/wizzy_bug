@@ -210,9 +210,12 @@ function Detail({
   };
 
   const handleSaveFix = async () => {
+    const description = fixDescription.trim();
+    if (!description) return;
+
     setSavingFix(true);
     try {
-      await saveFixNotes(bug.rawId, fixDescription);
+      await saveFixNotes(bug.rawId, description);
       setFixDescription("");
       setSavedFix(true);
       setTimeout(() => setSavedFix(false), 2000);
@@ -966,7 +969,7 @@ function Detail({
           <button
             className="primary full"
             onClick={handleSaveFix}
-            disabled={savingFix}
+            disabled={savingFix || !fixDescription.trim()}
           >
             {savingFix ? "Saving..." : savedFix ? "Saved" : "Save Changes"}
           </button>
