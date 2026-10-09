@@ -630,20 +630,23 @@ export const updateFixNotes = async (
 ): Promise<void> => {
   try {
     const { fixDescription } = req.body;
+    const normalizedFixDescription =
+      typeof fixDescription === "string" ? fixDescription.trim() : "";
+    if (!normalizedFixDescription) {
+      res.status(400).json({ message: "Fix description is required" });
+      return;
+    }
+
     const ticket = await Ticket.findById(req.params.id);
     if (!ticket) {
       res.status(404).json({ message: "Ticket not found" });
       return;
     }
 
-    const normalizedFixDescription =
-      typeof fixDescription === "string" ? fixDescription.trim() : "";
     ticket.fixDescription = normalizedFixDescription;
     ticket.history.push({
       type: "update",
-      message: normalizedFixDescription
-        ? `Fix description updated: ${normalizedFixDescription}`
-        : "Fix description cleared",
+      message: `Fix description updated: ${normalizedFixDescription}`,
       actor: req.user?._id,
       actorName: req.user?.name || "Unknown user",
       createdAt: new Date(),
