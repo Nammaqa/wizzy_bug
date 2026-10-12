@@ -574,7 +574,7 @@ function App({ isAdminPage = false }) {
         <div className="content">
           {loadingData && bugs.length === 0 ? (
             <div className="muted" style={{ padding: 40, textAlign: "center" }}>
-              Loading your workspace...
+              Loading your workspace
             </div>
           ) : (
             content
