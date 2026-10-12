@@ -43,7 +43,9 @@ const getMailFrom = (): string | undefined =>
 export const isRealMailerConfigured = (): boolean =>
   Boolean(
     process.env.RESEND_API_KEY?.trim() && process.env.MAIL_FROM?.trim(),
-  ) || Boolean(resolveMailServiceUrl()) || Boolean(getSmtpTransport());
+  ) ||
+  Boolean(resolveMailServiceUrl()) ||
+  Boolean(getSmtpTransport());
 
 export const sendInviteViaMail = async (opts: {
   email: string;
@@ -146,12 +148,12 @@ The WizzyBug Team`;
       });
 
       console.log(
-        "[mailer] ✅ SMTP fallback invitation sent successfully:",
+        "[mailer] ✅ SMTP fallback invitation sent  successfully:",
         info.messageId,
       );
       return {
         success: true,
-        message: "Invite sent successfully via Gmail SMTP",
+        message: " Invite sent successfully via Gmail SMTP",
       };
     } catch (smtpError) {
       console.error(
@@ -185,7 +187,7 @@ The WizzyBug Team`;
       if (response.ok) {
         const data = await response.json();
         console.log(
-          "[mailer] ✅ Mail Service invitation sent successfully:",
+          "[mailer] Mail Service invitation sent successfully:",
           data,
         );
 
@@ -237,17 +239,19 @@ export const sendVerificationEmailViaMail = async (opts: {
   const resendApiKey = process.env.RESEND_API_KEY?.trim();
 
   if (!mailServiceUrl && !smtpTransport && !resendApiKey) {
-    throw new Error('No email provider is configured for verification emails.');
+    throw new Error("No email provider is configured for verification emails.");
   }
 
-  const subject = 'Verify your WizzyBug email';
+  const subject = "Verify your WizzyBug email";
   const body = `Hello ${opts.name},\n\nPlease verify your WizzyBug email address using this link:\n\n${opts.verificationLink}\n\nThis link expires in 24 hours.`;
   const html = `<h2>Hello ${escapeHtml(opts.name)},</h2><p>Please verify your WizzyBug email address:</p><p><a href="${escapeHtml(opts.verificationLink)}">Verify Email</a></p><p>This link expires in 24 hours.</p>`;
   const from = getMailFrom();
 
   if (resendApiKey) {
     if (!process.env.MAIL_FROM?.trim()) {
-      throw new Error('MAIL_FROM must be set to an address on a verified Resend domain.');
+      throw new Error(
+        "MAIL_FROM must be set to an address on a verified Resend domain.",
+      );
     }
     const { error } = await new Resend(resendApiKey).emails.send({
       from: process.env.MAIL_FROM.trim(),
@@ -257,32 +261,55 @@ export const sendVerificationEmailViaMail = async (opts: {
       text: body,
       html,
     });
-    if (error) throw new Error(`Resend could not send the verification email: ${error.message}`);
-    return { success: true, message: 'Verification email sent via Resend' };
+    if (error)
+      throw new Error(
+        `Resend could not send the verification email: ${error.message}`,
+      );
+    return { success: true, message: "Verification email sent via Resend" };
   }
 
   if (smtpTransport) {
     try {
-      await smtpTransport.sendMail({ from, replyTo: from, to: opts.email, subject, text: body, html });
-      return { success: true, message: 'Verification email sent via Gmail SMTP' };
+      await smtpTransport.sendMail({
+        from,
+        replyTo: from,
+        to: opts.email,
+        subject,
+        text: body,
+        html,
+      });
+      return {
+        success: true,
+        message: "Verification email sent via Gmail SMTP",
+      };
     } catch (error) {
       if (!mailServiceUrl) throw error;
-      console.error('[mailer] Gmail SMTP verification email failed:', error);
+      console.error("[mailer] Gmail SMTP verification email failed:", error);
     }
   }
 
   if (mailServiceUrl) {
     const response = await fetch(mailServiceUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: opts.email, subject, body, html, from, replyTo: from }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: opts.email,
+        subject,
+        body,
+        html,
+        from,
+        replyTo: from,
+      }),
     });
-    if (response.ok) return { success: true, message: 'Verification email sent' };
+    if (response.ok)
+      return { success: true, message: "Verification email sent" };
     const responseBody = await response.text();
-    throw new Error(`Mail Service returned ${response.status}: ${response.statusText} - ${responseBody}`);
+    throw new Error(
+      `Mail Service returned ${response.status}: ${response.statusText} - ${responseBody}`,
+    );
   }
 
-  throw new Error('Verification email could not be sent.');
+  throw new Error("Verification email could not be sent.");
 };
 
 export const sendPasswordResetViaMail = async (opts: {
@@ -335,13 +362,17 @@ export const sendPasswordResetViaMail = async (opts: {
 };
 
 const escapeHtml = (value: string): string =>
-  value.replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  })[character] || character);
+  value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character] || character,
+  );
 
 const PRIORITY_EMAIL_LABELS: Record<string, string> = {
   critical: "P1-Immediate Fix",
