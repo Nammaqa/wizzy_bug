@@ -1,31 +1,94 @@
-﻿import React, { useMemo, useState, useEffect, useRef } from 'react';
-import * as Icons from 'lucide-react';
-const {LayoutDashboard,Bug,Plus,Users,User,Settings,LogOut,Search,Bell,ChevronDown,ArrowUpRight,Clock3,CircleCheck,TriangleAlert,Filter,Download,Menu,X,ChevronRight,Paperclip,Send,CalendarDays,BarChart3,FolderKanban,Activity,ShieldCheck,Eye,EyeOff,Moon,Sun,UserCog,Mail,ClipboardList,RefreshCcw,FolderPlus,ArrowLeft} = Icons;
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { API, apiFetch, setToken } from '../config/api';
-import { formatIST, formatISTLong, timeAgoIST, IST_TZ } from '../utils/date';
-import { STATUS_LABELS, STATUS_VALUES, PRIORITY_LABELS, SEVERITY_TO_PRIORITY } from '../utils/constants';
-import { Avatar, Logo, RoleBadge, Status } from '../components/Ui';
-import { initialsOf, isAssignedToUser, priorityLabel, statusLabel, buildTimeline } from '../utils/formatters';
+﻿import React, { useMemo, useState, useEffect, useRef } from "react";
+import * as Icons from "lucide-react";
+const {
+  LayoutDashboard,
+  Bug,
+  Plus,
+  Users,
+  User,
+  Settings,
+  LogOut,
+  Search,
+  Bell,
+  ChevronDown,
+  ArrowUpRight,
+  Clock3,
+  CircleCheck,
+  TriangleAlert,
+  Filter,
+  Download,
+  Menu,
+  X,
+  ChevronRight,
+  Paperclip,
+  Send,
+  CalendarDays,
+  BarChart3,
+  FolderKanban,
+  Activity,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Moon,
+  Sun,
+  UserCog,
+  Mail,
+  ClipboardList,
+  RefreshCcw,
+  FolderPlus,
+  ArrowLeft,
+} = Icons;
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { API, apiFetch, setToken } from "../config/api";
+import { formatIST, formatISTLong, timeAgoIST, IST_TZ } from "../utils/date";
+import {
+  STATUS_LABELS,
+  STATUS_VALUES,
+  PRIORITY_LABELS,
+  SEVERITY_TO_PRIORITY,
+} from "../utils/constants";
+import { Avatar, Logo, RoleBadge, Status } from "../components/Ui";
+import {
+  initialsOf,
+  isAssignedToUser,
+  priorityLabel,
+  statusLabel,
+  buildTimeline,
+} from "../utils/formatters";
 
 const isValidGmail = (value) => {
-  const [localPart, domain] = value.split('@');
-  return value.length <= 254 && domain === 'gmail.com' && localPart.length <= 64 &&
-    !localPart.includes('..') && /^[a-z0-9](?:[a-z0-9._%+-]*[a-z0-9])?$/.test(localPart);
+  const [localPart, domain] = value.split("@");
+  return (
+    value.length <= 254 &&
+    domain === "gmail.com" &&
+    localPart.length <= 64 &&
+    !localPart.includes("..") &&
+    /^[a-z0-9](?:[a-z0-9._%+-]*[a-z0-9])?$/.test(localPart)
+  );
 };
 const isStrongPassword = (value) =>
-  value.length >= 6 && value.length <= 40 && /[a-z]/.test(value) && /[A-Z]/.test(value) &&
-  /\d/.test(value) && /[^A-Za-z0-9]/.test(value);
+  value.length >= 6 &&
+  value.length <= 40 &&
+  /[a-z]/.test(value) &&
+  /[A-Z]/.test(value) &&
+  /\d/.test(value) &&
+  /[^A-Za-z0-9]/.test(value);
 const normalizeUserName = (value) => value.trim().replace(/\s+/g, " ");
 const isValidUserName = (value) =>
-  value.length >= 2 && value.length <= 40 && /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value);
+  value.length >= 2 &&
+  value.length <= 40 &&
+  /^[A-Za-z]+(?: [A-Za-z]+)*$/.test(value);
 
 function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
-  const verificationResult = new URLSearchParams(window.location.search).get("email-verification");
+  const verificationResult = new URLSearchParams(window.location.search).get(
+    "email-verification",
+  );
   const rememberedCredentials = (() => {
     try {
-      return JSON.parse(localStorage.getItem("rememberedCredentials") || "null");
+      return JSON.parse(
+        localStorage.getItem("rememberedCredentials") || "null",
+      );
     } catch {
       return null;
     }
@@ -34,14 +97,20 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isRegister, setIsRegister] = useState(verificationResult !== null);
   const [email, setEmail] = useState(rememberedCredentials?.email || "");
-  const [password, setPassword] = useState(rememberedCredentials?.password || "");
+  const [password, setPassword] = useState(
+    rememberedCredentials?.password || "",
+  );
   const [confirmPassword, setConfirmPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(Boolean(rememberedCredentials));
   const [error, setError] = useState(
-    verificationResult === "error" ? "This verification link is invalid or has expired." : "",
+    verificationResult === "error"
+      ? "This verification link is invalid or has expired."
+      : "",
   );
   const [status, setStatus] = useState(
-    verificationResult === "success" ? "Email verified successfully. You can now log in." : "",
+    verificationResult === "success"
+      ? "Email verified successfully. You can now log in."
+      : "",
   );
   const [submitting, setSubmitting] = useState(false);
   const [forgotSubmitting, setForgotSubmitting] = useState(false);
@@ -53,7 +122,9 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
     setStatus("");
 
     const normalizedEmail = email.trim().toLowerCase();
-    const registrationName = isRegister ? normalizeUserName(e.target.name.value) : "";
+    const registrationName = isRegister
+      ? normalizeUserName(e.target.name.value)
+      : "";
     setEmail(normalizedEmail);
     if (!isValidGmail(normalizedEmail)) {
       setError("Enter a valid @gmail.com email address.");
@@ -66,7 +137,9 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
         return;
       }
       if (!isStrongPassword(password)) {
-        setError("Password must be at least 6 characters and include uppercase, lowercase, a number, and a special character.");
+        setError(
+          "Password must be at least 6 characters and include uppercase, lowercase, a number, and a special character.",
+        );
         return;
       }
       if (password !== confirmPassword) {
@@ -85,9 +158,17 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
         const role = e.target.role.value;
         data = await apiFetch("/auth/register", {
           method: "POST",
-          body: JSON.stringify({ name: registrationName, email: normalizedEmail, password, confirmPassword, role }),
+          body: JSON.stringify({
+            name: registrationName,
+            email: normalizedEmail,
+            password,
+            confirmPassword,
+            role,
+          }),
         });
-        setStatus(data.message || "Account created successfully. Please sign in.");
+        setStatus(
+          data.message || "Account created successfully. Please sign in.",
+        );
         setIsRegister(false);
         setPassword("");
         setConfirmPassword("");
@@ -136,7 +217,9 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      setStatus(data.message || "If an account exists, a reset link has been sent.");
+      setStatus(
+        data.message || "If an account exists, a reset link has been sent.",
+      );
     } catch (err) {
       setError(err.message || "Could not send the reset email.");
     } finally {
@@ -209,7 +292,10 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
                 pattern="[A-Za-z]+( [A-Za-z]+)*"
                 title="Use letters only; spaces are allowed between names."
                 onInput={(event) => {
-                  event.currentTarget.value = event.currentTarget.value.replace(/[^A-Za-z ]/g, "");
+                  event.currentTarget.value = event.currentTarget.value.replace(
+                    /[^A-Za-z ]/g,
+                    "",
+                  );
                 }}
                 autoComplete="off"
               />
@@ -264,7 +350,11 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
                 />
                 <button
                   type="button"
-                  aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
+                  aria-label={
+                    showConfirm
+                      ? "Hide confirm password"
+                      : "Show confirm password"
+                  }
                   onClick={() => setShowConfirm((visible) => !visible)}
                 >
                   {showConfirm ? <EyeOff /> : <Eye />}
@@ -275,11 +365,7 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
           {isRegister && (
             <label>
               My Role
-              <select
-                name="role"
-                defaultValue=""
-                required
-              >
+              <select name="role" defaultValue="" required>
                 <option value="" disabled>
                   Select role
                 </option>
@@ -298,9 +384,11 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
                   onChange={(event) => {
                     const checked = event.target.checked;
                     setRememberMe(checked);
-                    if (!checked) localStorage.removeItem("rememberedCredentials");
+                    if (!checked)
+                      localStorage.removeItem("rememberedCredentials");
                   }}
-                /> Remember me
+                />{" "}
+                Remember me
               </label>
               <button
                 type="button"
@@ -343,4 +431,4 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
 }
 
 export default Login;
-
+//.

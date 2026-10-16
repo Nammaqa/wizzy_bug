@@ -16,7 +16,7 @@ The Vite client runs on `http://localhost:5173` and the API on `http://localhost
 
 - `src/` React client with responsive role dashboard, bug table, reporting form, details/activity, users, and profile.
 - `server/src/models.js` Mongoose User, Bug, Comment/Activity, and Notification structures.
-- `server/src/index.js` JWT auth, RBAC, uploads, filtering, pagination, dashboard, user, notification, and bug APIs.
+- `server/src/index.js` JWT auth, RBAC, uploads, filtering, pagination, dashboard, user, notification, and bug APIs. dsfsdf
 
 ## API overview
 
