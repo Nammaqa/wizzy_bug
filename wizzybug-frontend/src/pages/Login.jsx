@@ -57,14 +57,27 @@ import {
   buildTimeline,
 } from "../utils/formatters";
 
-const isValidGmail = (value) => {
-  const [localPart, domain] = value.split("@");
+const isValidEmail = (value) => {
+  const atIndex = value.indexOf("@");
+  if (atIndex <= 0 || atIndex !== value.lastIndexOf("@") || value.length > 254) {
+    return false;
+  }
+
+  const localPart = value.slice(0, atIndex);
+  const domain = value.slice(atIndex + 1);
+  const domainLabels = domain.split(".");
   return (
-    value.length <= 254 &&
-    domain === "gmail.com" &&
     localPart.length <= 64 &&
     !localPart.includes("..") &&
-    /^[a-z0-9](?:[a-z0-9._%+-]*[a-z0-9])?$/.test(localPart)
+    /^[a-z0-9](?:[a-z0-9._%+-]*[a-z0-9])?$/.test(localPart) &&
+    domain.length <= 253 &&
+    domainLabels.length >= 2 &&
+    domainLabels.every(
+      (label) =>
+        label.length >= 1 &&
+        label.length <= 63 &&
+        /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label),
+    )
   );
 };
 const isStrongPassword = (value) =>
@@ -126,8 +139,8 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
       ? normalizeUserName(e.target.name.value)
       : "";
     setEmail(normalizedEmail);
-    if (!isValidGmail(normalizedEmail)) {
-      setError("Enter a valid @gmail.com email address.");
+    if (!isValidEmail(normalizedEmail)) {
+      setError("Enter a valid email address.");
       return;
     }
 

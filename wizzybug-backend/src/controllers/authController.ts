@@ -5,16 +5,11 @@ import { v4 as uuidv4 } from 'uuid';
 import User from '../models/User';
 import { isRealMailerConfigured, sendInviteViaMail, sendPasswordResetViaMail, sendVerificationEmailViaMail } from '../utils/mailer';
 import { isValidUserName, normalizeUserName } from '../utils/userName';
+import { isValidEmailAddress } from '../utils/email';
 
 const ALLOWED_ROLES = ['admin', 'developer', 'tester'];
 
 const normalizeEmail = (value: unknown): string => typeof value === 'string' ? value.trim().toLowerCase() : '';
-
-const isGmailAddress = (email: string): boolean => {
-  const [localPart, domain] = email.split('@');
-  return email.length <= 254 && domain === 'gmail.com' && localPart.length <= 64 &&
-    !localPart.includes('..') && /^[a-z0-9](?:[a-z0-9._%+-]*[a-z0-9])?$/.test(localPart);
-};
 
 const findUserByEmail = (email: string) =>
   User.findOne({ email: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
@@ -45,8 +40,8 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    if (!isGmailAddress(normalizedEmail)) {
-      res.status(400).json({ message: 'Enter a valid @gmail.com email address' });
+    if (!isValidEmailAddress(normalizedEmail)) {
+      res.status(400).json({ message: 'Enter a valid email address' });
       return;
     }
 
@@ -67,7 +62,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
 
     const userExists = await findUserByEmail(normalizedEmail);
     if (userExists) {
-      res.status(409).json({ message: 'An account with this Gmail address already exists' });
+      res.status(409).json({ message: 'An account with this email address already exists' });
       return;
     }
 
@@ -101,7 +96,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     res.status(201).json({ message: 'Account created. Please check your email to verify your account before signing in.' });
   } catch (error) {
     if ((error as { code?: number })?.code === 11000) {
-      res.status(409).json({ message: 'An account with this Gmail address already exists' });
+      res.status(409).json({ message: 'An account with this email address already exists' });
       return;
     }
     console.error('[registerUser]', error);
@@ -113,7 +108,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const email = normalizeEmail(req.body.email);
     const password = req.body.password;
-    if (!isGmailAddress(email) || typeof password !== 'string' || password.length < 6) {
+    if (!isValidEmailAddress(email) || typeof password !== 'string' || password.length < 6) {
       res.status(401).json({ message: 'Invalid email or password' });
       return;
     }
