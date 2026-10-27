@@ -59,7 +59,11 @@ import {
 
 const isValidEmail = (value) => {
   const atIndex = value.indexOf("@");
-  if (atIndex <= 0 || atIndex !== value.lastIndexOf("@") || value.length > 254) {
+  if (
+    atIndex <= 0 ||
+    atIndex !== value.lastIndexOf("@") ||
+    value.length > 254
+  ) {
     return false;
   }
 
@@ -254,8 +258,8 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
             <em>one bug at a time.</em>
           </h1>
           <p>
-            Everything your team needs to report, track, and resolve issues
-            without losing momentum.
+            Everything your team needs to report, track, resolve issues without
+            losing momentum.
           </p>
         </div>
         <small className="copyright">
