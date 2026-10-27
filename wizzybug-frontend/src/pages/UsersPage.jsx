@@ -1,13 +1,62 @@
-﻿import React, { useMemo, useState, useEffect } from 'react';
-import * as Icons from 'lucide-react';
-const {LayoutDashboard,Bug,Plus,Users,User,Settings,LogOut,Search,Bell,ChevronDown,ArrowUpRight,Clock3,CircleCheck,TriangleAlert,Filter,Download,Menu,X,ChevronRight,Paperclip,Send,CalendarDays,BarChart3,FolderKanban,Activity,ShieldCheck,Eye,EyeOff,Moon,Sun,UserCog,Mail,ClipboardList,RefreshCcw,FolderPlus,ArrowLeft,Trash2} = Icons;
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { API, apiFetch, setToken } from '../config/api';
-import { formatIST, formatISTLong, timeAgoIST, IST_TZ } from '../utils/date';
-import { STATUS_LABELS, STATUS_VALUES, PRIORITY_LABELS, SEVERITY_TO_PRIORITY } from '../utils/constants';
-import { Avatar, Logo, RoleBadge, Status } from '../components/Ui';
-import { initialsOf, isAssignedToUser, priorityLabel, statusLabel, buildTimeline } from '../utils/formatters';
+﻿import React, { useMemo, useState, useEffect } from "react";
+import * as Icons from "lucide-react";
+const {
+  LayoutDashboard,
+  Bug,
+  Plus,
+  Users,
+  User,
+  Settings,
+  LogOut,
+  Search,
+  Bell,
+  ChevronDown,
+  ArrowUpRight,
+  Clock3,
+  CircleCheck,
+  TriangleAlert,
+  Filter,
+  Download,
+  Menu,
+  X,
+  ChevronRight,
+  Paperclip,
+  Send,
+  CalendarDays,
+  BarChart3,
+  FolderKanban,
+  Activity,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Moon,
+  Sun,
+  UserCog,
+  Mail,
+  ClipboardList,
+  RefreshCcw,
+  FolderPlus,
+  ArrowLeft,
+  Trash2,
+} = Icons;
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { API, apiFetch, setToken } from "../config/api";
+import { formatIST, formatISTLong, timeAgoIST, IST_TZ } from "../utils/date";
+import {
+  STATUS_LABELS,
+  STATUS_VALUES,
+  PRIORITY_LABELS,
+  SEVERITY_TO_PRIORITY,
+} from "../utils/constants";
+import { Avatar, Logo, RoleBadge, Status } from "../components/Ui";
+import {
+  initialsOf,
+  isAssignedToUser,
+  priorityLabel,
+  statusLabel,
+  buildTimeline,
+} from "../utils/formatters";
 
 function InviteUserModal({ onClose, onInvited }) {
   const [loading, setLoading] = useState(false);
@@ -39,9 +88,7 @@ function InviteUserModal({ onClose, onInvited }) {
         });
       setConfirmation({
         email,
-        sent:
-          data?.mailMode !== "unconfigured" &&
-          data?.mailMode !== "preview",
+        sent: data?.mailMode !== "unconfigured" && data?.mailMode !== "preview",
         preview: data?.mailMode === "preview",
       });
     } catch (err) {
@@ -79,7 +126,9 @@ function InviteUserModal({ onClose, onInvited }) {
                 ? "The invitation was created, but the backend only generated a preview; no email was sent to:"
                 : "The invitation was created, but email delivery is not configured on the backend:"}
           </p>
-          <strong className="inviteConfirmationEmail">{confirmation.email}</strong>
+          <strong className="inviteConfirmationEmail">
+            {confirmation.email}
+          </strong>
           <span
             className={`inviteDeliveryStatus ${confirmation.sent ? "sent" : "notSent"}`}
           >
@@ -90,84 +139,87 @@ function InviteUserModal({ onClose, onInvited }) {
           </button>
         </section>
       ) : (
-      <form
-        className="panel profileForm"
-        onSubmit={handleInvite}
-        style={{ width: "400px", padding: "30px" }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "20px",
-          }}
+        <form
+          className="panel profileForm"
+          onSubmit={handleInvite}
+          style={{ width: "400px", padding: "30px" }}
         >
-          <h3 style={{ margin: 0 }}>Invite Team Member</h3>
-          <button
-            type="button"
-            onClick={onClose}
+          <div
             style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--muted)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "20px",
             }}
           >
-            <X size={20} />
-          </button>
-        </div>
-        <p
-          className="muted"
-          style={{ marginTop: -10, marginBottom: 15, fontSize: 13 }}
-        >
-          <Mail size={13} style={{ verticalAlign: -2, marginRight: 4 }} />A real
-          email with a sign-up link is sent to the address below.
-        </p>
-        {error && <div className="formError">{error}</div>}
-        <label>
-          Full Name
-          <input
-            name="name"
-            required
-            maxLength={40}
-            pattern="[A-Za-z]+( [A-Za-z]+)*"
-            title="Use letters only; spaces are allowed between names."
-            onInput={(event) => {
-              event.currentTarget.value = event.currentTarget.value.replace(/[^A-Za-z ]/g, "");
-            }}
-            placeholder="Jane Doe"
-          />
-        </label>
-        <label>
-          Email Address
-          <input
-            name="email"
-            type="text"
-            required
-            maxLength={40}
-            placeholder="jane@example.com"
-          />
-        </label>
-        <label>
-          Role
-          <select name="role" className="roleSelect">
-            <option value="developer">Developer</option>
-            <option value="tester">Tester</option>
-            <option value="admin">Admin</option>
-          </select>
-        </label>
-        <div className="formActions" style={{ marginTop: "25px" }}>
-          <button
-            className="primary"
-            type="submit"
-            disabled={loading}
-            style={{ width: "100%" }}
+            <h3 style={{ margin: 0 }}>Invite Team Member</h3>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--muted)",
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <p
+            className="muted"
+            style={{ marginTop: -10, marginBottom: 15, fontSize: 13 }}
           >
-            {loading ? "Sending invite..." : "Send Invite"}
-          </button>
-        </div>
-      </form>
+            <Mail size={13} style={{ verticalAlign: -2, marginRight: 4 }} />A
+            real email with a sign-up link is sent to the address below.
+          </p>
+          {error && <div className="formError">{error}</div>}
+          <label>
+            Full Name
+            <input
+              name="name"
+              required
+              maxLength={40}
+              pattern="[A-Za-z]+( [A-Za-z]+)*"
+              title="Use letters only; spaces are allowed between names."
+              onInput={(event) => {
+                event.currentTarget.value = event.currentTarget.value.replace(
+                  /[^A-Za-z ]/g,
+                  "",
+                );
+              }}
+              placeholder="Jane Doe"
+            />
+          </label>
+          <label>
+            Email Address
+            <input
+              name="email"
+              type="text"
+              required
+              maxLength={40}
+              placeholder="jane@example.com"
+            />
+          </label>
+          <label>
+            Role
+            <select name="role" className="roleSelect">
+              <option value="developer">Developer</option>
+              <option value="tester">Tester</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+          <div className="formActions" style={{ marginTop: "25px" }}>
+            <button
+              className="primary"
+              type="submit"
+              disabled={loading}
+              style={{ width: "100%" }}
+            >
+              {loading ? "Sending invite..." : "Send Invite"}
+            </button>
+          </div>
+        </form>
       )}
     </div>
   );
@@ -432,7 +484,7 @@ function UsersPage({ users, bugs = [], currentUser, refreshUsers }) {
                   className="muted"
                   style={{ textAlign: "center", padding: "30px 0" }}
                 >
-                  No team members yet. Invite your first user to get started.
+                  No team members yet. Invite your first user to get started..
                 </td>
               </tr>
             )}
