@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { createHash } from "crypto";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
@@ -210,6 +211,15 @@ export const verifyEmail = async (
       return;
     }
 
+    const usedTokenHash = createHash("sha256").update(token).digest("hex");
+    const alreadyVerifiedUser = await User.findOne({
+      emailVerificationTokenUsedHash: usedTokenHash,
+    });
+    if (alreadyVerifiedUser) {
+      res.json({ message: "Email verified successfully. You can now log in." });
+      return;
+    }
+
     const user = await User.findOne({
       emailVerificationToken: token,
       emailVerificationExpiresAt: { $gt: new Date() },
@@ -225,6 +235,7 @@ export const verifyEmail = async (
     user.emailVerified = true;
     user.emailVerificationToken = undefined;
     user.emailVerificationExpiresAt = undefined;
+    user.emailVerificationTokenUsedHash = usedTokenHash;
     await user.save();
     res.json({ message: "Email verified successfully. You can now log in." });
   } catch (error) {
