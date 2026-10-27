@@ -108,7 +108,9 @@ function Login({ onLogin, isAdminPage, theme, toggleTheme }) {
   })();
   const [show, setShow] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [isRegister, setIsRegister] = useState(verificationResult !== null);
+  const [isRegister, setIsRegister] = useState(
+    verificationResult !== null && verificationResult !== "success",
+  );
   const [email, setEmail] = useState(rememberedCredentials?.email || "");
   const [password, setPassword] = useState(
     rememberedCredentials?.password || "",
