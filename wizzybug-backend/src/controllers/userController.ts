@@ -5,15 +5,10 @@ import User from "../models/User";
 import Project from "../models/Project";
 import Ticket from "../models/Ticket";
 import { isValidUserName, normalizeUserName } from "../utils/userName";
+import { isValidEmailAddress } from "../utils/email";
 
 const normalizeEmail = (value: unknown): string =>
   typeof value === "string" ? value.trim().toLowerCase() : "";
-
-const isGmailAddress = (email: string): boolean => {
-  const [localPart, domain] = email.split("@");
-  return email.length <= 254 && domain === "gmail.com" && localPart.length <= 64 &&
-    !localPart.includes("..") && /^[a-z0-9](?:[a-z0-9._%+-]*[a-z0-9])?$/.test(localPart);
-};
 
 export const updateCurrentUser = async (
   req: AuthRequest,
@@ -27,8 +22,8 @@ export const updateCurrentUser = async (
       res.status(400).json({ message: "Name must be 2 to 40 characters and contain letters only" });
       return;
     }
-    if (!isGmailAddress(email)) {
-      res.status(400).json({ message: "Enter a valid @gmail.com email address" });
+    if (!isValidEmailAddress(email)) {
+      res.status(400).json({ message: "Enter a valid email address" });
       return;
     }
     if (!req.user) {
@@ -38,7 +33,7 @@ export const updateCurrentUser = async (
 
     const existingUser = await User.findOne({ email });
     if (existingUser && String(existingUser._id) !== String(req.user._id)) {
-      res.status(409).json({ message: "An account with this Gmail address already exists" });
+      res.status(409).json({ message: "An account with this email address already exists" });
       return;
     }
 
