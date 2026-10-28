@@ -911,16 +911,13 @@ function Detail({
             {reassignOpen && (
               <select
                 autoFocus
-                multiple
-                defaultValue={bug.assigneeIds || []}
+                defaultValue={bug.assigneeIds?.[0] || ""}
                 onChange={(e) =>
-                  handleReassign(
-                    Array.from(e.target.selectedOptions, (opt) => opt.value),
-                  )
+                  handleReassign(e.target.value)
                 }
                 disabled={busy}
-                style={{ minHeight: "110px" }}
               >
+                <option value="">Unassigned</option>
                 {users
                   .filter(
                     (u) =>

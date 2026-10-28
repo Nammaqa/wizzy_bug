@@ -15,6 +15,7 @@ function AssignBugsPage({ bugs, users, assignBug, setSelected }) {
   const [busyId, setBusyId] = useState(null);
   const [assignmentNotice, setAssignmentNotice] = useState("");
   const [openAssigneeMenu, setOpenAssigneeMenu] = useState(null);
+  const [pendingAssignees, setPendingAssignees] = useState([]);
 
   const assignableUsers = users.filter(
     (u) => u.role === "admin" || u.role === "developer" || u.role === "tester",
@@ -47,6 +48,11 @@ function AssignBugsPage({ bugs, users, assignBug, setSelected }) {
       alert(e.message || "Could not assign bug");
     }
     setBusyId(null);
+  };
+
+  const openAssigneeSelector = (bug) => {
+    setPendingAssignees(bug.assigneeIds || []);
+    setOpenAssigneeMenu(openAssigneeMenu === bug.rawId ? null : bug.rawId);
   };
 
   return (
@@ -206,9 +212,7 @@ function AssignBugsPage({ bugs, users, assignBug, setSelected }) {
                         disabled={busyId === b.rawId}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setOpenAssigneeMenu(
-                            openAssigneeMenu === b.rawId ? null : b.rawId,
-                          );
+                          openAssigneeSelector(b);
                         }}
                       >
                         Select assignee
@@ -223,11 +227,28 @@ function AssignBugsPage({ bugs, users, assignBug, setSelected }) {
                               key={d._id}
                               onClick={(e) => {
                                 e.stopPropagation();
+                                if (b.assignee === "Unassigned") {
+                                  setPendingAssignees((current) =>
+                                    current.includes(d._id)
+                                      ? current.filter((id) => id !== d._id)
+                                      : [...current, d._id],
+                                  );
+                                  return;
+                                }
                                 setOpenAssigneeMenu(null);
                                 handleAssign(b, [d._id]);
                               }}
                               className="assignOptionItem"
                             >
+                              {b.assignee === "Unassigned" && (
+                                <input
+                                  type="checkbox"
+                                  tabIndex={-1}
+                                  checked={pendingAssignees.includes(d._id)}
+                                  readOnly
+                                  aria-label={`Assign to ${d.name}`}
+                                />
+                              )}
                               <span className="assignOptionLine">
                                 <span className="assignOptionName">{d.name}</span>
                                 <span className="assignOptionRole">
@@ -236,6 +257,20 @@ function AssignBugsPage({ bugs, users, assignBug, setSelected }) {
                               </span>
                             </button>
                           ))}
+                          {b.assignee === "Unassigned" && (
+                            <button
+                              type="button"
+                              className="primary assignApplyButton"
+                              disabled={!pendingAssignees.length || busyId === b.rawId}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenAssigneeMenu(null);
+                                handleAssign(b, pendingAssignees);
+                              }}
+                            >
+                              Assign selected
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -276,4 +311,3 @@ function AssignBugsPage({ bugs, users, assignBug, setSelected }) {
 // projects (admin), see per-project bug counts, jump into a scoped bug list.
 
 export default AssignBugsPage;
-
