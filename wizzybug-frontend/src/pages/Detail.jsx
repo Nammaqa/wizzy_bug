@@ -142,7 +142,9 @@ function Detail({
 }) {
   const [next, setNext] = useState(bug.status);
   const [commentText, setCommentText] = useState("");
-  const [fixDescription, setFixDescription] = useState("");
+  const [fixDescription, setFixDescription] = useState(
+    () => bug.fixDescription || "",
+  );
   const [savingFix, setSavingFix] = useState(false);
   const [savedFix, setSavedFix] = useState(false);
   const [reassignOpen, setReassignOpen] = useState(false);
@@ -216,7 +218,7 @@ function Detail({
     setSavingFix(true);
     try {
       await saveFixNotes(bug.rawId, description);
-      setFixDescription("");
+      setFixDescription(description);
       setSavedFix(true);
       setTimeout(() => setSavedFix(false), 2000);
     } catch (e) {
