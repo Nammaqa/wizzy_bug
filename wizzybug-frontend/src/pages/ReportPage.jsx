@@ -333,8 +333,8 @@ function ReportPage({
               >
                 <span>
                   {selectedAssigneeNames.length
-                  ? selectedAssigneeNames[0]
-                  : "Select assignee"}
+                    ? selectedAssigneeNames[0]
+                    : "Select assignee"}
                 </span>
                 <ChevronDown size={16} />
               </button>
@@ -374,7 +374,9 @@ function ReportPage({
                     );
                   })}
                   {assignableUsers.length === 0 && (
-                    <div className="assignOptionName">No assignees available</div>
+                    <div className="assignOptionName">
+                      No assignees available
+                    </div>
                   )}
                 </div>
               )}
@@ -706,11 +708,7 @@ function ReportPage({
         </label>
 
         <div className="formActions">
-          <button
-            type="button"
-            className="outline"
-            onClick={goBack}
-          >
+          <button type="button" className="outline" onClick={goBack}>
             Cancel
           </button>
           <button className="primary" disabled={submitting}>
@@ -723,6 +721,6 @@ function ReportPage({
   );
 }
 
-// Turns backend history + comment entries into one merged, time-sorted feed.
+// Turns backend history +  comment entries into one merged, time-sorted feed.
 
 export default ReportPage;

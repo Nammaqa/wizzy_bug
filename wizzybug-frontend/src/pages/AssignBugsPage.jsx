@@ -1,13 +1,62 @@
-﻿import React, { useMemo, useState, useEffect } from 'react';
-import * as Icons from 'lucide-react';
-const {LayoutDashboard,Bug,Plus,Users,User,Settings,LogOut,Search,Bell,ChevronDown,ArrowUpRight,Clock3,CircleCheck,TriangleAlert,Filter,Download,Menu,X,ChevronRight,Paperclip,Send,CalendarDays,BarChart3,FolderKanban,Activity,ShieldCheck,Eye,EyeOff,Moon,Sun,UserCog,Mail,ClipboardList,RefreshCcw,FolderPlus,ArrowLeft} = Icons;
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { API, apiFetch, setToken } from '../config/api';
-import { formatIST, formatISTLong, timeAgoIST, IST_TZ } from '../utils/date';
-import { STATUS_LABELS, STATUS_VALUES, PRIORITY_LABELS, SEVERITY_TO_PRIORITY } from '../utils/constants';
-import { Avatar, Logo, RoleBadge, Status } from '../components/Ui';
-import { initialsOf, isAssignedToUser, priorityLabel, statusLabel, buildTimeline, severityClass } from '../utils/formatters';
+﻿import React, { useMemo, useState, useEffect } from "react";
+import * as Icons from "lucide-react";
+const {
+  LayoutDashboard,
+  Bug,
+  Plus,
+  Users,
+  User,
+  Settings,
+  LogOut,
+  Search,
+  Bell,
+  ChevronDown,
+  ArrowUpRight,
+  Clock3,
+  CircleCheck,
+  TriangleAlert,
+  Filter,
+  Download,
+  Menu,
+  X,
+  ChevronRight,
+  Paperclip,
+  Send,
+  CalendarDays,
+  BarChart3,
+  FolderKanban,
+  Activity,
+  ShieldCheck,
+  Eye,
+  EyeOff,
+  Moon,
+  Sun,
+  UserCog,
+  Mail,
+  ClipboardList,
+  RefreshCcw,
+  FolderPlus,
+  ArrowLeft,
+} = Icons;
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { API, apiFetch, setToken } from "../config/api";
+import { formatIST, formatISTLong, timeAgoIST, IST_TZ } from "../utils/date";
+import {
+  STATUS_LABELS,
+  STATUS_VALUES,
+  PRIORITY_LABELS,
+  SEVERITY_TO_PRIORITY,
+} from "../utils/constants";
+import { Avatar, Logo, RoleBadge, Status } from "../components/Ui";
+import {
+  initialsOf,
+  isAssignedToUser,
+  priorityLabel,
+  statusLabel,
+  buildTimeline,
+  severityClass,
+} from "../utils/formatters";
 
 function AssignBugsPage({ bugs, users, assignBug, setSelected }) {
   const [projectFilter, setProjectFilter] = useState("All");
@@ -37,7 +86,10 @@ function AssignBugsPage({ bugs, users, assignBug, setSelected }) {
     try {
       await assignBug(bug.rawId, userIds);
       const assignedNames = userIds
-        .map((userId) => assignableUsers.find((assignee) => assignee._id === userId)?.name)
+        .map(
+          (userId) =>
+            assignableUsers.find((assignee) => assignee._id === userId)?.name,
+        )
         .filter(Boolean)
         .join(", ");
       setAssignmentNotice(
@@ -168,9 +220,7 @@ function AssignBugsPage({ bugs, users, assignBug, setSelected }) {
                     className="bugTitleCell"
                   >
                     <b>{b.title}</b>
-                    <small>
-                      {b.project}
-                    </small>
+                    <small>{b.project}</small>
                   </td>
                   <td>
                     <span className={"severity " + severityClass(b.severity)}>
@@ -229,7 +279,9 @@ function AssignBugsPage({ bugs, users, assignBug, setSelected }) {
                               className="assignOptionItem"
                             >
                               <span className="assignOptionLine">
-                                <span className="assignOptionName">{d.name}</span>
+                                <span className="assignOptionName">
+                                  {d.name}
+                                </span>
                                 <span className="assignOptionRole">
                                   <RoleBadge role={d.role} />
                                 </span>
@@ -260,7 +312,8 @@ function AssignBugsPage({ bugs, users, assignBug, setSelected }) {
                     className="muted"
                     style={{ textAlign: "center", padding: "10px 0" }}
                   >
-                    No developers or testers yet - invite one from User Management.
+                    No developers or testers yet - invite one from User
+                    Management.
                   </td>
                 </tr>
               )}
