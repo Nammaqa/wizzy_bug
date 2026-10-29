@@ -420,6 +420,18 @@ function App({ isAdminPage = false }) {
     setProjects((x) => [data, ...x]);
   };
 
+  const updateProject = async (projectId, payload) => {
+    const data = await apiFetch(`/projects/${projectId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+    setProjects((current) =>
+      current.map((project) =>
+        String(project._id) === String(projectId) ? data : project,
+      ),
+    );
+  };
+
   const deleteProject = async (projectId) => {
     await apiFetch(`/projects/${projectId}`, { method: "DELETE" });
     setProjects((current) =>
@@ -521,6 +533,7 @@ function App({ isAdminPage = false }) {
         bugs={bugs}
         user={user}
         createProject={createProject}
+        updateProject={updateProject}
         deleteProject={deleteProject}
         openProject={openProject}
         setPage={navigatePage}
