@@ -391,7 +391,14 @@ function App({ isAdminPage = false }) {
       method: "PUT",
       body: JSON.stringify({ fixDescription }),
     });
-    setBugs((x) => x.map((b) => (b.rawId === rawId ? formatBug(data) : b)));
+    const updatedBug = formatBug(data);
+    setBugs((x) =>
+      x.map((b) =>
+        b.rawId === rawId
+          ? { ...b, ...updatedBug, fixDescription }
+          : b,
+      ),
+    );
   };
 
   const assignBug = async (rawId, userIds) => {

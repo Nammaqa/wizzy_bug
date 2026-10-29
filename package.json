@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "dev": "npm --prefix wizzybug-frontend run dev",
+    "build": "npm --prefix wizzybug-frontend run build"
+  },
   "devDependencies": {
     "@types/nodemailer": "^8.0.1"
   },
