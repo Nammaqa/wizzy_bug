@@ -289,6 +289,13 @@ export const updateTicket = async (
       res.status(404).json({ message: "Ticket not found" });
       return;
     }
+    const assignedUserIds = getTicketAssigneeIds(ticket);
+    if (!req.user?._id || !assignedUserIds.includes(String(req.user._id))) {
+      res.status(403).json({
+        message: "Only an assigned user can edit this bug",
+      });
+      return;
+    }
     const previouslyAssignedIds = getTicketAssigneeIds(ticket);
     const originalFieldValues: Record<string, string> = {
       Title: String(ticket.title ?? ""),
