@@ -156,8 +156,13 @@ function Detail({
     defectTypeOptions.includes(bug.defectType) ? "" : bug.defectType || "",
   );
   const [editForm, setEditForm] = useState(() => buildEditForm(bug));
+  const canEdit = isAssignedToUser(bug, user);
 
   useEffect(() => {
+    if (editing && !canEdit) {
+      setEditing(false);
+      return;
+    }
     if (editing) return;
 
     setNext(bug.status);
@@ -167,7 +172,7 @@ function Detail({
     );
     setAttachmentsToUpload([]);
     setAttachmentUploadError("");
-  }, [bug, editing]);
+  }, [bug, editing, canEdit]);
 
   const canReassign = true;
   const timeline = buildTimeline(bug);
@@ -229,7 +234,7 @@ function Detail({
 
   const handleSaveEdit = async (event) => {
     event.preventDefault();
-    if (!editForm.title.trim()) return;
+    if (!canEdit || !editForm.title.trim()) return;
     setBusy(true);
     try {
       await updateBug(bug.rawId, {
@@ -417,13 +422,15 @@ function Detail({
           </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button
-            className="outline"
-            onClick={() => setEditing((value) => !value)}
-          >
-            <Pencil size={17} />
-            {editing ? "Cancel Edit" : "Edit Defect"}
-          </button>
+          {canEdit && (
+            <button
+              className="outline"
+              onClick={() => setEditing((value) => !value)}
+            >
+              <Pencil size={17} />
+              {editing ? "Cancel Edit" : "Edit Defect"}
+            </button>
+          )}
           <button className="outline" onClick={exportBugPDF}>
             <Download size={17} />
             Export PDF
