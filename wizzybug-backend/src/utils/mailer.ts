@@ -13,7 +13,7 @@ export const resolveMailServiceUrl = (): string => {
   if (!configuredUrl) return "";
 
   // The deployed mail service exposes its handler at /api/index. Accepting
-  // the shorter /api value avoids silently posting to the Vercel directory.
+  // the shorter /api value avoids silently posting to the Vercel directory....
   if (configuredUrl.endsWith("/api")) return `${configuredUrl}/index`;
   return configuredUrl;
 };

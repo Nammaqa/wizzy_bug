@@ -22,11 +22,12 @@ const normalizeAssigneeIds = (value: unknown): mongoose.Types.ObjectId[] => {
   return ids.map((id) => new mongoose.Types.ObjectId(id));
 };
 
-const getTicketAssigneeIds = (ticket: ITicket): string[] =>
-  [...new Set([
+const getTicketAssigneeIds = (ticket: ITicket): string[] => [
+  ...new Set([
     ...(ticket.assignees || []).map(String),
     ...(ticket.assignee ? [String(ticket.assignee)] : []),
-  ])];
+  ]),
+];
 
 const notifyAssignees = async (
   ticket: ITicket,
@@ -38,8 +39,9 @@ const notifyAssignees = async (
   changedFields: string[] = [],
 ): Promise<void> => {
   const previousIds = new Set(previouslyAssignedIds);
-  const newlyAssignedIds = [...new Set(assignedIds.map(String))]
-    .filter((id) => !previousIds.has(id));
+  const newlyAssignedIds = [...new Set(assignedIds.map(String))].filter(
+    (id) => !previousIds.has(id),
+  );
   if (!newlyAssignedIds.length) return;
 
   const [assignees, project] = await Promise.all([
@@ -47,38 +49,48 @@ const notifyAssignees = async (
     knownProject || Project.findById(ticket.project).select("name key"),
   ]);
   if (!project) {
-    console.error(`[assignment email] Project not found for bug ${ticket.defectId || ticket._id}`);
+    console.error(
+      `[assignment email] Project not found for bug ${ticket.defectId || ticket._id}`,
+    );
     return;
   }
 
-  const appUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || process.env.VITE_APP_URL || "http://localhost:5173";
-  await Promise.all(assignees.filter((assignee) => assignee.email).map(async (assignee) => {
-    try {
-      const delivery = await sendBugAssignmentEmail({
-        to: assignee.email,
-        assigneeName: assignee.name,
-        assignedBy,
-        bugId: ticket.defectId || String(ticket._id),
-        title: ticket.title,
-        description: ticket.description,
-        projectName: project.name,
-        projectKey: project.key,
-        priority: ticket.priority,
-        severity: ticket.severity,
-        appUrl,
-        event,
-        changedFields,
-      });
-      console.info(
-        `[assignment email] Sent ${event} notification for ${ticket.defectId || ticket._id} to ${assignee.email} via ${delivery.message}`,
-      );
-    } catch (error) {
-      console.error(
-        `[assignment email] Failed for ${ticket.defectId || ticket._id} to ${assignee.email}:`,
-        error,
-      );
-    }
-  }));
+  const appUrl =
+    process.env.FRONTEND_URL ||
+    process.env.CLIENT_URL ||
+    process.env.VITE_APP_URL ||
+    "http://localhost:5173";
+  await Promise.all(
+    assignees
+      .filter((assignee) => assignee.email)
+      .map(async (assignee) => {
+        try {
+          const delivery = await sendBugAssignmentEmail({
+            to: assignee.email,
+            assigneeName: assignee.name,
+            assignedBy,
+            bugId: ticket.defectId || String(ticket._id),
+            title: ticket.title,
+            description: ticket.description,
+            projectName: project.name,
+            projectKey: project.key,
+            priority: ticket.priority,
+            severity: ticket.severity,
+            appUrl,
+            event,
+            changedFields,
+          });
+          console.info(
+            `[assignment email] Sent ${event} notification for ${ticket.defectId || ticket._id} to ${assignee.email} via ${delivery.message}`,
+          );
+        } catch (error) {
+          console.error(
+            `[assignment email] Failed for ${ticket.defectId || ticket._id} to ${assignee.email}:`,
+            error,
+          );
+        }
+      }),
+  );
 };
 
 export const getTickets = async (
@@ -301,7 +313,9 @@ export const updateTicket = async (
       ...ticket.attachments.map((attachment) => String(attachment._id)),
       ticket.imageUrl ? "legacy-image" : "",
       ticket.screenshot ? "legacy-screenshot" : "",
-    ].sort().join(",");
+    ]
+      .sort()
+      .join(",");
 
     const {
       title,
@@ -377,7 +391,8 @@ export const updateTicket = async (
       } catch (error) {
         console.error("[updateTicket] Attachment upload failed:", error);
         res.status(502).json({
-          message: "Attachment upload failed. Please check the file and try again.",
+          message:
+            "Attachment upload failed. Please check the file and try again.",
         });
         return;
       }
@@ -453,7 +468,9 @@ export const updateTicket = async (
       ...ticket.attachments.map((attachment) => String(attachment._id)),
       ticket.imageUrl ? "legacy-image" : "",
       ticket.screenshot ? "legacy-screenshot" : "",
-    ].sort().join(",");
+    ]
+      .sort()
+      .join(",");
     if (originalAttachmentState !== currentAttachmentState) {
       changedFields.push("Attachments");
     }
@@ -666,7 +683,7 @@ export const updateFixNotes = async (
   }
 };
 
-// Add a timestamped comment/update note to a ticket (any authenticated user).
+// Add a timestamped comment/update note to a ticket (any authenticated user). ..
 export const addTicketComment = async (
   req: AuthRequest,
   res: Response,

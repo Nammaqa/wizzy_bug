@@ -156,8 +156,13 @@ function Detail({
     defectTypeOptions.includes(bug.defectType) ? "" : bug.defectType || "",
   );
   const [editForm, setEditForm] = useState(() => buildEditForm(bug));
+  const canEdit = isAssignedToUser(bug, user);
 
   useEffect(() => {
+    if (editing && !canEdit) {
+      setEditing(false);
+      return;
+    }
     if (editing) return;
 
     setNext(bug.status);
@@ -167,7 +172,7 @@ function Detail({
     );
     setAttachmentsToUpload([]);
     setAttachmentUploadError("");
-  }, [bug, editing]);
+  }, [bug, editing, canEdit]);
 
   const canReassign = true;
   const timeline = buildTimeline(bug);
@@ -176,8 +181,7 @@ function Detail({
     Object.keys(originalEditForm).some(
       (field) =>
         field !== "defectType" &&
-        String(editForm[field] ?? "") !==
-        String(originalEditForm[field] ?? ""),
+        String(editForm[field] ?? "") !== String(originalEditForm[field] ?? ""),
     ) ||
     (editForm.defectType === "Other"
       ? otherDefectType.trim()
@@ -229,7 +233,7 @@ function Detail({
 
   const handleSaveEdit = async (event) => {
     event.preventDefault();
-    if (!editForm.title.trim()) return;
+    if (!canEdit || !editForm.title.trim()) return;
     setBusy(true);
     try {
       await updateBug(bug.rawId, {
@@ -417,13 +421,15 @@ function Detail({
           </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button
-            className="outline"
-            onClick={() => setEditing((value) => !value)}
-          >
-            <Pencil size={17} />
-            {editing ? "Cancel Edit" : "Edit Defect"}
-          </button>
+          {canEdit && (
+            <button
+              className="outline"
+              onClick={() => setEditing((value) => !value)}
+            >
+              <Pencil size={17} />
+              {editing ? "Cancel Edit" : "Edit Defect"}
+            </button>
+          )}
           <button className="outline" onClick={exportBugPDF}>
             <Download size={17} />
             Export PDF
@@ -439,9 +445,7 @@ function Detail({
                   Defect name *<b></b>
                   <input
                     value={editForm.title}
-                    onChange={(e) =>
-                      updateEditField("title", e.target.value)
-                    }
+                    onChange={(e) => updateEditField("title", e.target.value)}
                     required
                   />
                 </label>
@@ -450,9 +454,7 @@ function Detail({
                   <textarea
                     value={editForm.desc}
                     required
-                    onChange={(e) =>
-                      updateEditField("desc", e.target.value)
-                    }
+                    onChange={(e) => updateEditField("desc", e.target.value)}
                   />
                 </label>
                 <label>
@@ -632,7 +634,10 @@ function Detail({
                               value={type}
                               checked={editForm.typeOfApplication === type}
                               onChange={(e) =>
-                                updateEditField("typeOfApplication", e.target.value)
+                                updateEditField(
+                                  "typeOfApplication",
+                                  e.target.value,
+                                )
                               }
                             />
                             {type}
@@ -683,7 +688,9 @@ function Detail({
                       e.target.value = "";
                     }}
                   />
-                  <small>New attachments are added without replacing existing files.</small>
+                  <small>
+                    New attachments are added without replacing existing files.
+                  </small>
                   {attachmentUploadError && (
                     <small className="attachmentUploadError" role="alert">
                       {attachmentUploadError}
@@ -746,65 +753,73 @@ function Detail({
             )}
             <div className="attachmentList">
               {(bug.attachments || []).map((savedAttachment) => {
-              const downloadUrl =
-                savedAttachment.url ||
-                (savedAttachment.id === "legacy-screenshot"
-                  ? `${API}/tickets/${bug.rawId}/screenshot`
-                  : null);
-              const type = savedAttachment.contentType || "";
-              const AttachmentTypeIcon = type.startsWith("image/")
-                ? FileImage
-                : type.startsWith("video/")
-                  ? FileVideo
-                  : type.includes("pdf") || type.startsWith("text/")
-                    ? FileText
-                    : FileIcon;
+                const downloadUrl =
+                  savedAttachment.url ||
+                  (savedAttachment.id === "legacy-screenshot"
+                    ? `${API}/tickets/${bug.rawId}/screenshot`
+                    : null);
+                const type = savedAttachment.contentType || "";
+                const AttachmentTypeIcon = type.startsWith("image/")
+                  ? FileImage
+                  : type.startsWith("video/")
+                    ? FileVideo
+                    : type.includes("pdf") || type.startsWith("text/")
+                      ? FileText
+                      : FileIcon;
 
-              return (
-                <div
-                  className="attachment"
-                  key={savedAttachment.id}
-                >
-                  <AttachmentTypeIcon className="attachmentFileIcon" size={21} />
-                  <span>
-                    <b title={savedAttachment.fileName}>{savedAttachment.fileName}</b>
-                    <small>
-                      {type.split("/").pop()?.toUpperCase() || "FILE"}
-                    </small>
-                  </span>
-                  <div className="attachmentActions">
-                    {downloadUrl && (
-                      <button
-                        className="iconBtn"
-                        type="button"
-                        title="Download attachment"
-                        aria-label={`Download ${savedAttachment.fileName}`}
-                        onClick={() => window.open(downloadUrl, "_blank")}
-                      >
-                        <Download size={17} />
-                      </button>
-                    )}
+                return (
+                  <div className="attachment" key={savedAttachment.id}>
+                    <AttachmentTypeIcon
+                      className="attachmentFileIcon"
+                      size={21}
+                    />
+                    <span>
+                      <b title={savedAttachment.fileName}>
+                        {savedAttachment.fileName}
+                      </b>
+                      <small>
+                        {type.split("/").pop()?.toUpperCase() || "FILE"}
+                      </small>
+                    </span>
+                    <div className="attachmentActions">
+                      {downloadUrl && (
+                        <button
+                          className="iconBtn"
+                          type="button"
+                          title="Download attachment"
+                          aria-label={`Download ${savedAttachment.fileName}`}
+                          onClick={() => window.open(downloadUrl, "_blank")}
+                        >
+                          <Download size={17} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
+                );
               })}
               {attachmentsToUpload.map((file, index) => {
-              const AttachmentTypeIcon = file.type.startsWith("image/")
-                ? FileImage
-                : file.type.startsWith("video/")
-                  ? FileVideo
-                  : file.type.includes("pdf") || file.type.startsWith("text/")
-                    ? FileText
-                    : FileIcon;
-              return (
-                <div className="attachment attachmentPendingUpload" key={`${file.name}-${file.lastModified}-${index}`}>
-                  <AttachmentTypeIcon className="attachmentFileIcon" size={21} />
-                  <span>
-                    <b title={file.name}>{file.name}</b>
-                    <small>Will be added when changes are saved</small>
-                  </span>
-                </div>
-              );
+                const AttachmentTypeIcon = file.type.startsWith("image/")
+                  ? FileImage
+                  : file.type.startsWith("video/")
+                    ? FileVideo
+                    : file.type.includes("pdf") || file.type.startsWith("text/")
+                      ? FileText
+                      : FileIcon;
+                return (
+                  <div
+                    className="attachment attachmentPendingUpload"
+                    key={`${file.name}-${file.lastModified}-${index}`}
+                  >
+                    <AttachmentTypeIcon
+                      className="attachmentFileIcon"
+                      size={21}
+                    />
+                    <span>
+                      <b title={file.name}>{file.name}</b>
+                      <small>Will be added when changes are saved</small>
+                    </span>
+                  </div>
+                );
               })}
             </div>
           </article>
@@ -914,9 +929,7 @@ function Detail({
               <select
                 autoFocus
                 defaultValue={bug.assigneeIds?.[0] || ""}
-                onChange={(e) =>
-                  handleReassign(e.target.value)
-                }
+                onChange={(e) => handleReassign(e.target.value)}
                 disabled={busy}
               >
                 <option value="">Unassigned</option>
@@ -977,5 +990,4 @@ function Detail({
     </>
   );
 }
-
 export default Detail;
