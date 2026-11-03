@@ -164,7 +164,15 @@ test('formats assignment email priorities as P1-P4 labels', async () => {
 
       const payload = JSON.parse(requests.at(-1).options.body);
       assert.match(payload.body, new RegExp(`Priority: ${label}`));
-      assert.match(payload.html, new RegExp(`<td>${label}<\\/td>`));
+      assert.match(
+        payload.html,
+        new RegExp(`<td style="padding:9px 12px;">${label}<\\/td>`),
+      );
+      assert.match(
+        payload.html,
+        /This is an automated notification from WizzyBug\. Please do not reply to this email\./,
+      );
+      assert.doesNotMatch(payload.html, /Regards,<br>/);
       assert.doesNotMatch(payload.body, new RegExp(`Priority: ${priority}$`, 'm'));
     }
   } finally {
