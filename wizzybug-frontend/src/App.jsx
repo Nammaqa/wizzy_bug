@@ -265,7 +265,11 @@ function App({ isAdminPage = false }) {
         onLogin={(u, token) => {
           setToken(token);
           setUser(u);
+          setPage("dashboard");
+          setSelectedId(null);
+          setSelectedProjectId(null);
           setLogged(true);
+          navigate(pagePath("dashboard"), { replace: true });
         }}
         isAdminPage={isAdminPage}
         theme={theme}
