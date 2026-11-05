@@ -426,15 +426,14 @@ ${isUpdate ? "This bug assignment has been updated." : "You have been assigned a
 
 ${actionMessage}
 
-Assignment details
--------------------
+BUG DETAILS
 Bug ID: ${opts.bugId}
 Title: ${opts.title}
 Project: ${project}
 Priority: ${priorityLabel}
 Severity: ${opts.severity}${changeSummary}
 
-Description:
+DESCRIPTION
 ${opts.description || "No description provided."}
 
 Please review the bug details and update its status in WizzyBug:
@@ -444,34 +443,43 @@ Regards,
 The WizzyBug Team`;
   const changesHtml =
     isUpdate && opts.changedFields?.length
-      ? `<p style="margin:0 0 20px;font-size:14px;line-height:1.5;color:#4b5563;"><strong>Changed details:</strong> ${opts.changedFields.map(escapeHtml).join(", ")}</p>`
+      ? `<div style="margin:0 0 24px;padding:12px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;color:#9a3412;font-size:14px;line-height:1.5;"><strong>Updated fields:</strong> ${opts.changedFields.map(escapeHtml).join(", ")}</div>`
       : "";
+  const description = escapeHtml(
+    opts.description || "No description provided.",
+  ).replace(/\n/g, "<br>");
   const html = `<!doctype html>
 <html lang="en">
-  <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f3f4f6;padding:32px 16px;">
+  <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f4f6;padding:32px 16px;">
       <tr>
         <td align="center">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+            <tr>
+              <td style="padding:24px 32px;background:#312e81;color:#ffffff;">
+                <p style="margin:0 0 8px;font-size:12px;letter-spacing:1px;text-transform:uppercase;opacity:.85;">WizzyBug</p>
+                <h1 style="margin:0;font-size:24px;line-height:1.3;">${isUpdate ? "Bug updated" : "Bug assigned to you"}</h1>
+              </td>
+            </tr>
             <tr>
               <td style="padding:32px;">
-                <p style="margin:0 0 8px;font-size:14px;font-weight:bold;letter-spacing:.04em;text-transform:uppercase;color:#2563eb;">WizzyBug</p>
-                <h1 style="margin:0 0 20px;font-size:24px;line-height:1.3;color:#111827;">${isUpdate ? "Bug assignment updated" : "New bug assigned to you"}</h1>
-                <p style="margin:0 0 12px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(opts.assigneeName)},</p>
-                <p style="margin:0 0 20px;font-size:16px;line-height:1.5;"><strong>${escapeHtml(opts.assignedBy)}</strong> ${isUpdate ? "updated the following bug assigned to you" : "assigned the following bug to you"} in WizzyBug.</p>
-                <h2 style="margin:0 0 12px;font-size:17px;color:#111827;">Assignment details</h2>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 20px;font-size:14px;">
-                  <tr><td style="padding:9px 12px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:bold;width:32%;">Bug ID</td><td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;">${escapeHtml(opts.bugId)}</td></tr>
-                  <tr><td style="padding:9px 12px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:bold;">Title</td><td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;">${escapeHtml(opts.title)}</td></tr>
-                  <tr><td style="padding:9px 12px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:bold;">Project</td><td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;">${escapeHtml(project)}</td></tr>
-                  <tr><td style="padding:9px 12px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:bold;">Priority</td><td style="padding:9px 12px;">${escapeHtml(priorityLabel)}</td></tr>
-                  <tr><td style="padding:9px 12px;background:#f9fafb;font-weight:bold;">Severity</td><td style="padding:9px 12px;">${escapeHtml(opts.severity)}</td></tr>
-                </table>
+                <p style="margin:0 0 16px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(opts.assigneeName)},</p>
+                <p style="margin:0 0 24px;font-size:15px;line-height:1.6;"><strong>${escapeHtml(opts.assignedBy)}</strong> ${isUpdate ? "updated a bug assigned to you" : "assigned a bug to you"} in WizzyBug. Please review the details below.</p>
                 ${changesHtml}
-                <h2 style="margin:0 0 8px;font-size:17px;color:#111827;">Description</h2>
-                <div style="margin:0 0 24px;padding:14px 16px;background:#f9fafb;border-left:4px solid #2563eb;font-size:15px;line-height:1.6;white-space:normal;">${escapeHtml(opts.description || "No description provided.").replace(/\n/g, "<br>")}</div>
-                <p style="margin:0 0 24px;"><a href="${escapeHtml(opts.appUrl)}" style="display:inline-block;padding:12px 20px;background:#2563eb;border-radius:6px;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;">Review bug in WizzyBug</a></p>
-                <p style="margin:0;font-size:14px;line-height:1.5;color:#6b7280;">This is an automated notification from WizzyBug. Please do not reply to this email.</p>
+                <h2 style="margin:0 0 12px;font-size:17px;color:#111827;">Bug details</h2>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;border-radius:6px;border-collapse:separate;overflow:hidden;font-size:14px;">
+                  <tr style="background:#f9fafb;"><td style="padding:11px 14px;color:#6b7280;width:30%;"><strong>Bug ID</strong></td><td style="padding:11px 14px;">${escapeHtml(opts.bugId)}</td></tr>
+                  <tr><td style="padding:11px 14px;color:#6b7280;"><strong>Title</strong></td><td style="padding:11px 14px;">${escapeHtml(opts.title)}</td></tr>
+                  <tr style="background:#f9fafb;"><td style="padding:11px 14px;color:#6b7280;"><strong>Project</strong></td><td style="padding:11px 14px;">${escapeHtml(project)}</td></tr>
+                  <tr><td style="padding:11px 14px;color:#6b7280;"><strong>Priority</strong></td><td style="padding:11px 14px;">${escapeHtml(priorityLabel)}</td></tr>
+                  <tr style="background:#f9fafb;"><td style="padding:11px 14px;color:#6b7280;"><strong>Severity</strong></td><td style="padding:11px 14px;">${escapeHtml(opts.severity)}</td></tr>
+                </table>
+                <h2 style="margin:28px 0 12px;font-size:17px;color:#111827;">Description and reproduction steps</h2>
+                <div style="padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;line-height:1.6;word-break:break-word;">${description}</div>
+                <p style="margin:28px 0 0;">
+                  <a href="${escapeHtml(opts.appUrl)}" style="display:inline-block;padding:12px 20px;background:#4f46e5;border-radius:6px;color:#ffffff;font-size:14px;font-weight:bold;text-decoration:none;">Open bug in WizzyBug</a>
+                </p>
+                <p style="margin:24px 0 0;color:#6b7280;font-size:12px;line-height:1.5;">This is an automated notification from WizzyBug. Please do not reply to this email.</p>
               </td>
             </tr>
           </table>
