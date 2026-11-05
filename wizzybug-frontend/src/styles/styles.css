@@ -2303,7 +2303,8 @@ select {
 }
 
 .inviteConfirmation .primary {
-  width: 100%;
+  width: min(180px, 100%);
+  justify-content: center;
   margin-top: 6px;
 }
 
