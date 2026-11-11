@@ -342,21 +342,34 @@ function App({ isAdminPage = false }) {
 
   const updateBug = async (rawId, values) => {
     const formData = new FormData();
-    formData.append("title", values.title || "");
-    formData.append("description", values.desc || "");
-    formData.append("severity", values.severity || "Minor");
-    formData.append("priority", normalizePriority(values.priority || "medium"));
-    formData.append("environment", values.environment || "");
-    formData.append("moduleFeatureName", values.moduleFeatureName || "");
-    formData.append("buildAppVersion", values.buildAppVersion || "");
-    formData.append("releaseVersion", values.releaseVersion || "");
-    formData.append("reproductionRate", values.reproductionRate || "");
-    formData.append("expectedResult", values.expectedResult || "");
-    formData.append("actualResult", values.actualResult || "");
-    formData.append("defectType", values.defectType || "");
-    formData.append("typeOfApplication", values.typeOfApplication || "");
-    formData.append("browser", values.browser || "");
-    formData.append("browserVersion", values.browserVersion || "");
+    if (values.title !== undefined) formData.append("title", values.title);
+    if (values.desc !== undefined)
+      formData.append("description", values.desc);
+    if (values.severity !== undefined)
+      formData.append("severity", values.severity);
+    if (values.priority !== undefined)
+      formData.append("priority", normalizePriority(values.priority));
+    if (values.environment !== undefined)
+      formData.append("environment", values.environment);
+    if (values.moduleFeatureName !== undefined)
+      formData.append("moduleFeatureName", values.moduleFeatureName);
+    if (values.buildAppVersion !== undefined)
+      formData.append("buildAppVersion", values.buildAppVersion);
+    if (values.releaseVersion !== undefined)
+      formData.append("releaseVersion", values.releaseVersion);
+    if (values.reproductionRate !== undefined)
+      formData.append("reproductionRate", values.reproductionRate);
+    if (values.expectedResult !== undefined)
+      formData.append("expectedResult", values.expectedResult);
+    if (values.actualResult !== undefined)
+      formData.append("actualResult", values.actualResult);
+    if (values.defectType !== undefined)
+      formData.append("defectType", values.defectType);
+    if (values.typeOfApplication !== undefined)
+      formData.append("typeOfApplication", values.typeOfApplication);
+    if (values.browser !== undefined) formData.append("browser", values.browser);
+    if (values.browserVersion !== undefined)
+      formData.append("browserVersion", values.browserVersion);
     values.attachmentsToUpload?.forEach((file) =>
       formData.append("images", file),
     );
