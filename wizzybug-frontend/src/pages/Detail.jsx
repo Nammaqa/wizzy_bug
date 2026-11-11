@@ -58,10 +58,8 @@ import { Avatar, Logo, RoleBadge, Status } from "../components/Ui";
 import {
   initialsOf,
   isAssignedToUser,
-  priorityLabel,
   statusLabel,
   pdfText,
-  severityClass,
 } from "../utils/formatters";
 
 const environmentOptions = [
@@ -211,6 +209,17 @@ function Detail({
     } catch (e) {
       alert(e.message || "Could not update status");
       setNext(bug.status);
+    }
+    setBusy(false);
+  };
+
+  const handleDetailFieldChange = async (field, value) => {
+    setBusy(true);
+    try {
+      await updateBug(bug.rawId, { [field]: value });
+      updateEditField(field, value);
+    } catch (e) {
+      alert(e.message || `Could not update ${field}`);
     }
     setBusy(false);
   };
@@ -458,21 +467,6 @@ function Detail({
                   />
                 </label>
                 <label>
-                  Priority
-                  <select
-                    value={editForm.priority}
-                    onChange={(e) =>
-                      updateEditField("priority", e.target.value)
-                    }
-                  >
-                    {Object.keys(PRIORITY_LABELS).map((priority) => (
-                      <option key={priority} value={priority}>
-                        {PRIORITY_LABELS[priority]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
                   Reproduction Rate
                   <select
                     value={editForm.reproductionRate}
@@ -484,21 +478,6 @@ function Detail({
                     {reproductionRateOptions.map((rate) => (
                       <option key={rate} value={rate}>
                         {rate}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Severity
-                  <select
-                    value={editForm.severity}
-                    onChange={(e) =>
-                      updateEditField("severity", e.target.value)
-                    }
-                  >
-                    {SEVERITY_LABELS.map((severity) => (
-                      <option key={severity} value={severity}>
-                        {severity}
                       </option>
                     ))}
                   </select>
@@ -881,26 +860,39 @@ function Detail({
           </label>
           <label>
             Severity
-            <span className={"severity " + severityClass(bug.severity)}>
-              {bug.severity}
-            </span>
+            <select
+              value={bug.severity || "Minor"}
+              onChange={(e) =>
+                handleDetailFieldChange("severity", e.target.value)
+              }
+              disabled={!canEdit || busy}
+            >
+              {SEVERITY_LABELS.map((severity) => (
+                <option key={severity} value={severity}>
+                  {severity}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             Priority
-            <span
-              className={
-                "severity " +
-                severityClass(
-                  bug.priority ||
-                    SEVERITY_TO_PRIORITY[bug.severity] ||
-                    "medium",
-                )
+            <select
+              value={
+                bug.priority ||
+                SEVERITY_TO_PRIORITY[bug.severity] ||
+                "medium"
               }
+              onChange={(e) =>
+                handleDetailFieldChange("priority", e.target.value)
+              }
+              disabled={!canEdit || busy}
             >
-              {priorityLabel(
-                bug.priority || SEVERITY_TO_PRIORITY[bug.severity] || "medium",
-              )}
-            </span>
+              {Object.keys(PRIORITY_LABELS).map((priority) => (
+                <option key={priority} value={priority}>
+                  {PRIORITY_LABELS[priority]}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             Assignee
