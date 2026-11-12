@@ -10,21 +10,24 @@ import { Avatar, Logo, RoleBadge, Status } from '../components/Ui';
 import { initialsOf, isAssignedToUser, isReportedByUser, priorityLabel, statusLabel, buildTimeline } from '../utils/formatters';
 
 function Stats({ admin = true, bugs = [], user }) {
+  const now = new Date();
+  const monthOptions = {
+    timeZone: IST_TZ,
+    month: "numeric",
+    year: "numeric",
+  };
+  const currentMonth = now.toLocaleDateString("en-IN", monthOptions);
+  const isCurrentISTMonth = (dateInput) => {
+    const date = new Date(dateInput);
+    if (dateInput == null || !Number.isFinite(date.getTime())) return false;
+    return date.toLocaleDateString("en-IN", monthOptions) === currentMonth;
+  };
   const total = bugs.length;
   const open = bugs.filter((b) => b.status === "open").length;
   const inProgress = bugs.filter((b) => b.status === "in_progress").length;
   const closed = bugs.filter(
     (b) => b.status === "closed" || b.status === "resolved",
   ).length;
-
-  const thisMonthResolved = bugs.filter((b) => {
-    if (b.status !== "resolved" && b.status !== "closed") return false;
-    const d = new Date(b.updatedAt || b.createdAt);
-    const now = new Date();
-    return (
-      d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-    );
-  }).length;
 
   const data = admin
     ? [
@@ -33,12 +36,7 @@ function Stats({ admin = true, bugs = [], user }) {
           total,
           `${
             bugs.filter((b) => {
-              const d = new Date(b.createdAt);
-              const now = new Date();
-              return (
-                d.getMonth() === now.getMonth() &&
-                d.getFullYear() === now.getFullYear()
-              );
+              return isCurrentISTMonth(b.createdAt);
             }).length
           } this month`,
           Bug,
@@ -70,9 +68,10 @@ function Stats({ admin = true, bugs = [], user }) {
           bugs.filter(
             (b) =>
               isAssignedToUser(b, user) &&
-              (b.status === "resolved" || b.status === "closed"),
+              (b.status === "resolved" || b.status === "closed") &&
+              isCurrentISTMonth(b.updatedAt || b.createdAt),
           ).length,
-          "done",
+          "this month",
           CircleCheck,
           "blue",
         ],
