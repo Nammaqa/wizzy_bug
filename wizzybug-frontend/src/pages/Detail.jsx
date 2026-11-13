@@ -429,17 +429,22 @@ function Detail({
             Reported by {bug.reporter} on {formatIST(bug.createdAt)} IST
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
           {canEdit && (
             <button
               className="outline"
+              style={{ flex: "0 0 140px", justifyContent: "center" }}
               onClick={() => setEditing((value) => !value)}
             >
               <Pencil size={17} />
               {editing ? "Cancel Edit" : "Edit Defect"}
             </button>
           )}
-          <button className="outline" onClick={exportBugPDF}>
+          <button
+            className="outline"
+            style={{ flex: "0 0 140px", justifyContent: "center" }}
+            onClick={exportBugPDF}
+          >
             <Download size={17} />
             Export PDF
           </button>

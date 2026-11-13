@@ -214,7 +214,7 @@ function InviteUserModal({ onClose, onInvited }) {
               className="primary"
               type="submit"
               disabled={loading}
-              style={{ width: "100%" }}
+              style={{ width: "100%", justifyContent: "center" }}
             >
               {loading ? "Sending invite..." : "Send Invite"}
             </button>
