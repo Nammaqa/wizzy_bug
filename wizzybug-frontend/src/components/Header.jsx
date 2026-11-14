@@ -72,16 +72,21 @@ function Header({
 
   const userEmail = user?.email?.toLowerCase() || "";
   const projectNotifications = projects
-    .filter((project) =>
-      (project.members || []).some((member) => {
+    .filter((project) => {
+      const createdById = String(
+        project.createdBy?._id || project.createdBy || "",
+      );
+      if (user?._id && createdById === String(user._id)) return false;
+
+      return (project.members || []).some((member) => {
         const memberId = String(member?._id || member || "");
         const memberEmail = member?.email?.toLowerCase() || "";
         return (
           (userId && memberId === userId) ||
           (userEmail && memberEmail === userEmail)
         );
-      }),
-    )
+      });
+    })
     .map((project) => {
       const updatedAt = project.updatedAt || project.createdAt;
       return {
