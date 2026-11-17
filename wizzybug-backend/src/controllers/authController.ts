@@ -289,12 +289,12 @@ export const resetPassword = async (
 ): Promise<void> => {
   try {
     const { token, password } = req.body;
-    if (!token || exceedsUserFieldLimit(password) || password.length < 6) {
+    if (!token || !isStrongPassword(password)) {
       res
         .status(400)
         .json({
           message:
-            "A valid reset token and a password of 6 to 40 characters are required",
+            "Password must be 6 to 40 characters and include uppercase, lowercase, number, and special character",
         });
       return;
     }
