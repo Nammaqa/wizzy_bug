@@ -9,9 +9,21 @@ export default function ResetPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [status, setStatus] = useState("");
   const token = new URLSearchParams(window.location.search).get("token");
+  const passwordChecks = {
+    length: password.length >= 6 && password.length <= 40,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+  };
+  const passwordValid = Object.values(passwordChecks).every(Boolean);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!passwordValid) {
+      setStatus("Error: Password does not meet the requirements");
+      return;
+    }
     if (password !== confirmPassword) {
       setStatus("Error: Passwords do not match");
       return;
@@ -61,6 +73,23 @@ export default function ResetPassword() {
               </button>
             </div>
           </label>
+          <ul className="passwordRequirements" aria-live="polite">
+            <li className={passwordChecks.length ? "met" : ""}>
+              6-40 characters
+            </li>
+            <li className={passwordChecks.uppercase ? "met" : ""}>
+              At least one uppercase letter
+            </li>
+            <li className={passwordChecks.lowercase ? "met" : ""}>
+              At least one lowercase letter
+            </li>
+            <li className={passwordChecks.number ? "met" : ""}>
+              At least one number
+            </li>
+            <li className={passwordChecks.special ? "met" : ""}>
+              At least one special character
+            </li>
+          </ul>
           <label>
             Confirm Password
             <div className="password">
@@ -85,7 +114,7 @@ export default function ResetPassword() {
           <button
             className="primary"
             type="submit"
-            disabled={!token || status === "Resetting..."}
+            disabled={!token || !passwordValid || status === "Resetting..."}
           >
             Reset Password
           </button>
