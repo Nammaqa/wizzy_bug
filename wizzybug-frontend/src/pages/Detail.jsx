@@ -61,7 +61,6 @@ import {
   priorityLabel,
   statusLabel,
   pdfText,
-  severityClass,
 } from "../utils/formatters";
 
 const environmentOptions = [
@@ -129,6 +128,62 @@ function buildTimeline(bug) {
   );
 }
 
+const pdfValue = (value) => {
+  if (value == null || value === "") return "-";
+  if (Array.isArray(value)) {
+    return value.map((item) => pdfValue(item)).join("\n");
+  }
+  if (typeof value === "object") {
+    return pdfText(JSON.stringify(value, null, 2)) || "-";
+  }
+  return pdfText(value) || "-";
+};
+
+const pdfFieldLabel = (field) =>
+  String(field)
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+async function loadAttachmentPreview(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Attachment request failed (${response.status})`);
+  }
+
+  const objectUrl = URL.createObjectURL(await response.blob());
+  try {
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error("Attachment is not a readable image"));
+      image.src = objectUrl;
+    });
+
+    const maxDimension = 1200;
+    const scale = Math.min(
+      1,
+      maxDimension / image.naturalWidth,
+      maxDimension / image.naturalHeight,
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Could not prepare attachment preview");
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return {
+      data: canvas.toDataURL("image/jpeg", 0.85),
+      width: canvas.width,
+      height: canvas.height,
+    };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 function Detail({
   bug,
   setSelected,
@@ -142,7 +197,9 @@ function Detail({
 }) {
   const [next, setNext] = useState(bug.status);
   const [commentText, setCommentText] = useState("");
-  const [fixDescription, setFixDescription] = useState("");
+  const [fixDescription, setFixDescription] = useState(
+    () => bug.fixDescription || "",
+  );
   const [savingFix, setSavingFix] = useState(false);
   const [savedFix, setSavedFix] = useState(false);
   const [reassignOpen, setReassignOpen] = useState(false);
@@ -154,8 +211,13 @@ function Detail({
     defectTypeOptions.includes(bug.defectType) ? "" : bug.defectType || "",
   );
   const [editForm, setEditForm] = useState(() => buildEditForm(bug));
+  const canEdit = isAssignedToUser(bug, user);
 
   useEffect(() => {
+    if (editing && !canEdit) {
+      setEditing(false);
+      return;
+    }
     if (editing) return;
 
     setNext(bug.status);
@@ -165,7 +227,7 @@ function Detail({
     );
     setAttachmentsToUpload([]);
     setAttachmentUploadError("");
-  }, [bug, editing]);
+  }, [bug, editing, canEdit]);
 
   const canReassign = true;
   const timeline = buildTimeline(bug);
@@ -174,8 +236,7 @@ function Detail({
     Object.keys(originalEditForm).some(
       (field) =>
         field !== "defectType" &&
-        String(editForm[field] ?? "") !==
-        String(originalEditForm[field] ?? ""),
+        String(editForm[field] ?? "") !== String(originalEditForm[field] ?? ""),
     ) ||
     (editForm.defectType === "Other"
       ? otherDefectType.trim()
@@ -209,6 +270,17 @@ function Detail({
     setBusy(false);
   };
 
+  const handleDetailFieldChange = async (field, value) => {
+    setBusy(true);
+    try {
+      await updateBug(bug.rawId, { [field]: value });
+      updateEditField(field, value);
+    } catch (e) {
+      alert(e.message || `Could not update ${field}`);
+    }
+    setBusy(false);
+  };
+
   const handleSaveFix = async () => {
     const description = fixDescription.trim();
     if (!description) return;
@@ -216,7 +288,7 @@ function Detail({
     setSavingFix(true);
     try {
       await saveFixNotes(bug.rawId, description);
-      setFixDescription("");
+      setFixDescription(description);
       setSavedFix(true);
       setTimeout(() => setSavedFix(false), 2000);
     } catch (e) {
@@ -227,7 +299,7 @@ function Detail({
 
   const handleSaveEdit = async (event) => {
     event.preventDefault();
-    if (!editForm.title.trim()) return;
+    if (!canEdit || !editForm.title.trim()) return;
     setBusy(true);
     try {
       await updateBug(bug.rawId, {
@@ -256,9 +328,10 @@ function Detail({
     setBusy(false);
   };
 
-  const exportBugPDF = () => {
+  const exportBugPDF = async () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
     const center = pageWidth / 2;
 
@@ -266,19 +339,17 @@ function Detail({
     doc.setFontSize(18);
     doc.setFont(undefined, "bold");
     doc.text("BUG REPORT", center, 16, { align: "center" });
-    doc.setFontSize(12);
-    doc.text(pdfText(bug.title), center, 24, { align: "center" });
     doc.setFont(undefined, "normal");
     doc.setFontSize(9);
     doc.setTextColor(90);
-    doc.text(pdfText(`Generated: ${formatIST(new Date())}`), center, 31, {
+    doc.text(pdfText(`Generated: ${formatIST(new Date())}`), center, 24, {
       align: "center",
     });
 
     autoTable(doc, {
       startY: 38,
       theme: "grid",
-      margin: { left: margin, right: margin },
+      margin: { left: margin, right: margin, bottom: 18 },
       head: [["FIELD", "DETAIL"]],
       headStyles: {
         fillColor: [91, 70, 190],
@@ -297,39 +368,46 @@ function Detail({
         1: { cellWidth: pageWidth - margin * 2 - 45 },
       },
       body: [
-        ["BUG ID", pdfText(bug.id)],
-        ["STATUS", pdfText(statusLabel(bug.status))],
-        ["SEVERITY", pdfText(bug.severity)],
-        ["PROJECT", pdfText(bug.project)],
-        ["REPORTER", pdfText(bug.reporter)],
-        ["ASSIGNEE", pdfText(bug.assignee)],
-        ["REPORTED (IST)", pdfText(formatIST(bug.createdAt))],
-        ["LAST UPDATED (IST)", pdfText(formatIST(bug.updatedAt))],
-        ["ENVIRONMENT", pdfText(bug.environment || "-")],
-        ["MODULE / FEATURE", pdfText(bug.moduleFeatureName || "-")],
-        [
-          "BROWSER",
-          pdfText(
-            [bug.browser, bug.browserVersion].filter(Boolean).join(" ") || "-",
-          ),
-        ],
+        ["BUG ID", pdfValue(bug.id)],
+        ["BUG TITLE / DEFECT SUMMARY", pdfValue(bug.title)],
+        ["PROJECT NAME", pdfValue(bug.project)],
+        ["TECHNICAL MEMBER NAME", pdfValue(bug.technicalMemberName)],
+        ["MODULE / FEATURE NAME", pdfValue(bug.moduleFeatureName)],
+        ["ENVIRONMENT", pdfValue(bug.environment)],
+        ["BUILD / APP VERSION", pdfValue(bug.buildAppVersion)],
+        ["RELEASE VERSION", pdfValue(bug.releaseVersion)],
+        ["DEFECT TYPE", pdfValue(bug.defectType)],
+        ["SEVERITY", pdfValue(bug.severity)],
+        ["PRIORITY", pdfValue(priorityLabel(bug.priority))],
+        ["REPRODUCTION RATE", pdfValue(bug.reproductionRate)],
+        ["DESCRIPTION / STEPS TO REPRODUCE", pdfValue(bug.desc)],
+        ["EXPECTED RESULT", pdfValue(bug.expectedResult)],
+        ["ACTUAL RESULT", pdfValue(bug.actualResult)],
+        ["TYPE OF APPLICATION", pdfValue(bug.typeOfApplication)],
+        ["BROWSER", pdfValue(bug.browser)],
+        ["BROWSER VERSION", pdfValue(bug.browserVersion)],
+        ["REPORTER", pdfValue(bug.reporter)],
+        ["ASSIGNEE", pdfValue(bug.assignee)],
+        ["STATUS", pdfValue(statusLabel(bug.status))],
+        ["REPORTED DATE (IST)", pdfValue(formatIST(bug.createdAt))],
+        ["LAST UPDATED DATE (IST)", pdfValue(formatIST(bug.updatedAt))],
+        ["FIX DESCRIPTION", pdfValue(bug.fixDescription)],
       ],
     });
 
-    let y = doc.lastAutoTable.finalY + 8;
-    const reportSections = [
-      ["DESCRIPTION", bug.desc],
-      ["EXPECTED RESULT", bug.expectedResult],
-      ["ACTUAL RESULT", bug.actualResult],
-      ["FIX DESCRIPTION", bug.fixDescription],
-    ].filter(([, value]) => value);
-
-    if (reportSections.length) {
+    const customFields = Object.entries(bug.customFields || {}).filter(
+      ([, value]) =>
+        value !== undefined &&
+        value !== null &&
+        value !== "" &&
+        !(Array.isArray(value) && value.length === 0),
+    );
+    if (customFields.length) {
       autoTable(doc, {
-        startY: y,
+        startY: doc.lastAutoTable.finalY + 8,
         theme: "grid",
-        margin: { left: margin, right: margin },
-        head: [["REPORT SECTION", "CONTENT"]],
+        margin: { left: margin, right: margin, bottom: 18 },
+        head: [["ADDITIONAL FIELD", "VALUE"]],
         headStyles: {
           fillColor: [91, 70, 190],
           textColor: 255,
@@ -343,21 +421,81 @@ function Detail({
           valign: "top",
         },
         columnStyles: {
-          0: { cellWidth: 45, fontStyle: "bold" },
-          1: { cellWidth: pageWidth - margin * 2 - 45 },
+          0: { cellWidth: 50, fontStyle: "bold" },
+          1: { cellWidth: pageWidth - margin * 2 - 50 },
         },
-        body: reportSections.map(([label, value]) => [label, pdfText(value)]),
+        body: customFields.map(([field, value]) => [
+          pdfText(pdfFieldLabel(field)),
+          pdfValue(value),
+        ]),
       });
-      y = doc.lastAutoTable.finalY + 8;
+    }
+
+    const attachments = bug.attachments || [];
+    const attachmentRows = attachments.map((attachment) => [
+      pdfValue(attachment.fileName),
+      pdfValue(attachment.contentType),
+      attachment.contentType?.startsWith("image/")
+        ? "Preview included when available"
+        : "File attached",
+    ]);
+    autoTable(doc, {
+      startY: doc.lastAutoTable.finalY + 8,
+      theme: "grid",
+      margin: { left: margin, right: margin, bottom: 18 },
+      head: [["ATTACHMENT", "TYPE", "PREVIEW"]],
+      headStyles: {
+        fillColor: [91, 70, 190],
+        textColor: 255,
+        fontStyle: "bold",
+        halign: "center",
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+        overflow: "linebreak",
+        valign: "top",
+      },
+      columnStyles: {
+        0: { cellWidth: 65 },
+        1: { cellWidth: 42 },
+        2: { cellWidth: pageWidth - margin * 2 - 107 },
+      },
+      body: attachmentRows.length
+        ? attachmentRows
+        : [["-", "-", "No attachments"]],
+    });
+
+    const attachmentPreviews = [];
+    for (const attachment of attachments) {
+      if (!attachment.contentType?.startsWith("image/")) continue;
+      const url =
+        attachment.url ||
+        (attachment.id === "legacy-screenshot" && bug.rawId
+          ? `${API}/tickets/${bug.rawId}/screenshot`
+          : null);
+      if (!url) continue;
+
+      try {
+        const preview = await loadAttachmentPreview(url);
+        attachmentPreviews.push({
+          fileName: attachment.fileName,
+          ...preview,
+        });
+      } catch {
+        attachmentPreviews.push({
+          fileName: attachment.fileName,
+          unavailable: true,
+        });
+      }
     }
 
     if (timeline.length) {
-      if (y > 260) y = 18;
       autoTable(doc, {
-        startY: y,
+        startY: doc.lastAutoTable.finalY + 8,
         theme: "grid",
-        head: [["WHEN (IST)", "WHO", "ACTIVITY"]],
-        margin: { left: margin, right: margin },
+        head: [["TYPE", "WHEN (IST)", "WHO", "ACTIVITY"]],
+        margin: { left: margin, right: margin, bottom: 18 },
         headStyles: {
           fillColor: [91, 70, 190],
           textColor: 255,
@@ -370,23 +508,72 @@ function Detail({
           overflow: "linebreak",
           valign: "top",
         },
-        columnStyles: { 0: { cellWidth: 38 }, 1: { cellWidth: 35 } },
+        columnStyles: {
+          0: { cellWidth: 22 },
+          1: { cellWidth: 37 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: pageWidth - margin * 2 - 94 },
+        },
         body: timeline.map((t) => [
+          t.kind === "comment" ? "Comment" : "History",
           pdfText(formatIST(t.createdAt)),
-          pdfText(t.actorName),
-          pdfText(t.message),
+          pdfValue(t.actorName),
+          pdfText(t.kind === "comment" ? `Commented: ${t.message}` : t.message),
         ]),
       });
     }
+
+    attachmentPreviews.forEach((preview) => {
+      doc.addPage();
+      doc.setFontSize(12);
+      doc.setFont(undefined, "bold");
+      doc.setTextColor(20);
+      const fileNameLines = doc.splitTextToSize(
+        pdfText(preview.fileName),
+        pageWidth - margin * 2,
+      );
+      doc.text(fileNameLines, margin, 20);
+      const contentY = 24 + fileNameLines.length * 6;
+      if (preview.data) {
+        const scale = Math.min(
+          (pageWidth - margin * 2) / preview.width,
+          (pageHeight - contentY - 18) / preview.height,
+        );
+        const width = preview.width * scale;
+        const height = preview.height * scale;
+        doc.addImage(
+          preview.data,
+          "JPEG",
+          (pageWidth - width) / 2,
+          contentY,
+          width,
+          height,
+        );
+      } else {
+        doc.setFont(undefined, "normal");
+        doc.setFontSize(10);
+        doc.text(
+          "Image preview unavailable; attachment filename is listed above.",
+          margin,
+          contentY,
+          { maxWidth: pageWidth - margin * 2 },
+        );
+      }
+    });
 
     const pageCount = doc.internal.getNumberOfPages();
     for (let page = 1; page <= pageCount; page += 1) {
       doc.setPage(page);
       doc.setFontSize(8);
       doc.setTextColor(120);
-      doc.text(`WizzyBug | Page ${page} of ${pageCount}`, center, 290, {
-        align: "center",
-      });
+      doc.text(
+        `WizzyBug | Page ${page} of ${pageCount}`,
+        center,
+        pageHeight - 8,
+        {
+          align: "center",
+        },
+      );
     }
 
     doc.save(`${bug.id}_wizzyBug.pdf`);
@@ -414,15 +601,22 @@ function Detail({
             Reported by {bug.reporter} on {formatIST(bug.createdAt)} IST
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          {canEdit && (
+            <button
+              className="outline"
+              style={{ flex: "0 0 140px", justifyContent: "center" }}
+              onClick={() => setEditing((value) => !value)}
+            >
+              <Pencil size={17} />
+              {editing ? "Cancel Edit" : "Edit Defect"}
+            </button>
+          )}
           <button
             className="outline"
-            onClick={() => setEditing((value) => !value)}
+            style={{ flex: "0 0 140px", justifyContent: "center" }}
+            onClick={exportBugPDF}
           >
-            <Pencil size={17} />
-            {editing ? "Cancel Edit" : "Edit Defect"}
-          </button>
-          <button className="outline" onClick={exportBugPDF}>
             <Download size={17} />
             Export PDF
           </button>
@@ -437,9 +631,7 @@ function Detail({
                   Defect name *<b></b>
                   <input
                     value={editForm.title}
-                    onChange={(e) =>
-                      updateEditField("title", e.target.value)
-                    }
+                    onChange={(e) => updateEditField("title", e.target.value)}
                     required
                   />
                 </label>
@@ -448,25 +640,8 @@ function Detail({
                   <textarea
                     value={editForm.desc}
                     required
-                    onChange={(e) =>
-                      updateEditField("desc", e.target.value)
-                    }
+                    onChange={(e) => updateEditField("desc", e.target.value)}
                   />
-                </label>
-                <label>
-                  Priority
-                  <select
-                    value={editForm.priority}
-                    onChange={(e) =>
-                      updateEditField("priority", e.target.value)
-                    }
-                  >
-                    {Object.keys(PRIORITY_LABELS).map((priority) => (
-                      <option key={priority} value={priority}>
-                        {PRIORITY_LABELS[priority]}
-                      </option>
-                    ))}
-                  </select>
                 </label>
                 <label>
                   Reproduction Rate
@@ -480,21 +655,6 @@ function Detail({
                     {reproductionRateOptions.map((rate) => (
                       <option key={rate} value={rate}>
                         {rate}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Severity
-                  <select
-                    value={editForm.severity}
-                    onChange={(e) =>
-                      updateEditField("severity", e.target.value)
-                    }
-                  >
-                    {SEVERITY_LABELS.map((severity) => (
-                      <option key={severity} value={severity}>
-                        {severity}
                       </option>
                     ))}
                   </select>
@@ -630,7 +790,10 @@ function Detail({
                               value={type}
                               checked={editForm.typeOfApplication === type}
                               onChange={(e) =>
-                                updateEditField("typeOfApplication", e.target.value)
+                                updateEditField(
+                                  "typeOfApplication",
+                                  e.target.value,
+                                )
                               }
                             />
                             {type}
@@ -681,7 +844,9 @@ function Detail({
                       e.target.value = "";
                     }}
                   />
-                  <small>New attachments are added without replacing existing files.</small>
+                  <small>
+                    New attachments are added without replacing existing files.
+                  </small>
                   {attachmentUploadError && (
                     <small className="attachmentUploadError" role="alert">
                       {attachmentUploadError}
@@ -744,65 +909,73 @@ function Detail({
             )}
             <div className="attachmentList">
               {(bug.attachments || []).map((savedAttachment) => {
-              const downloadUrl =
-                savedAttachment.url ||
-                (savedAttachment.id === "legacy-screenshot"
-                  ? `${API}/tickets/${bug.rawId}/screenshot`
-                  : null);
-              const type = savedAttachment.contentType || "";
-              const AttachmentTypeIcon = type.startsWith("image/")
-                ? FileImage
-                : type.startsWith("video/")
-                  ? FileVideo
-                  : type.includes("pdf") || type.startsWith("text/")
-                    ? FileText
-                    : FileIcon;
+                const downloadUrl =
+                  savedAttachment.url ||
+                  (savedAttachment.id === "legacy-screenshot"
+                    ? `${API}/tickets/${bug.rawId}/screenshot`
+                    : null);
+                const type = savedAttachment.contentType || "";
+                const AttachmentTypeIcon = type.startsWith("image/")
+                  ? FileImage
+                  : type.startsWith("video/")
+                    ? FileVideo
+                    : type.includes("pdf") || type.startsWith("text/")
+                      ? FileText
+                      : FileIcon;
 
-              return (
-                <div
-                  className="attachment"
-                  key={savedAttachment.id}
-                >
-                  <AttachmentTypeIcon className="attachmentFileIcon" size={21} />
-                  <span>
-                    <b title={savedAttachment.fileName}>{savedAttachment.fileName}</b>
-                    <small>
-                      {type.split("/").pop()?.toUpperCase() || "FILE"}
-                    </small>
-                  </span>
-                  <div className="attachmentActions">
-                    {downloadUrl && (
-                      <button
-                        className="iconBtn"
-                        type="button"
-                        title="Download attachment"
-                        aria-label={`Download ${savedAttachment.fileName}`}
-                        onClick={() => window.open(downloadUrl, "_blank")}
-                      >
-                        <Download size={17} />
-                      </button>
-                    )}
+                return (
+                  <div className="attachment" key={savedAttachment.id}>
+                    <AttachmentTypeIcon
+                      className="attachmentFileIcon"
+                      size={21}
+                    />
+                    <span>
+                      <b title={savedAttachment.fileName}>
+                        {savedAttachment.fileName}
+                      </b>
+                      <small>
+                        {type.split("/").pop()?.toUpperCase() || "FILE"}
+                      </small>
+                    </span>
+                    <div className="attachmentActions">
+                      {downloadUrl && (
+                        <button
+                          className="iconBtn"
+                          type="button"
+                          title="Download attachment"
+                          aria-label={`Download ${savedAttachment.fileName}`}
+                          onClick={() => window.open(downloadUrl, "_blank")}
+                        >
+                          <Download size={17} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
+                );
               })}
               {attachmentsToUpload.map((file, index) => {
-              const AttachmentTypeIcon = file.type.startsWith("image/")
-                ? FileImage
-                : file.type.startsWith("video/")
-                  ? FileVideo
-                  : file.type.includes("pdf") || file.type.startsWith("text/")
-                    ? FileText
-                    : FileIcon;
-              return (
-                <div className="attachment attachmentPendingUpload" key={`${file.name}-${file.lastModified}-${index}`}>
-                  <AttachmentTypeIcon className="attachmentFileIcon" size={21} />
-                  <span>
-                    <b title={file.name}>{file.name}</b>
-                    <small>Will be added when changes are saved</small>
-                  </span>
-                </div>
-              );
+                const AttachmentTypeIcon = file.type.startsWith("image/")
+                  ? FileImage
+                  : file.type.startsWith("video/")
+                    ? FileVideo
+                    : file.type.includes("pdf") || file.type.startsWith("text/")
+                      ? FileText
+                      : FileIcon;
+                return (
+                  <div
+                    className="attachment attachmentPendingUpload"
+                    key={`${file.name}-${file.lastModified}-${index}`}
+                  >
+                    <AttachmentTypeIcon
+                      className="attachmentFileIcon"
+                      size={21}
+                    />
+                    <span>
+                      <b title={file.name}>{file.name}</b>
+                      <small>Will be added when changes are saved</small>
+                    </span>
+                  </div>
+                );
               })}
             </div>
           </article>
@@ -864,26 +1037,39 @@ function Detail({
           </label>
           <label>
             Severity
-            <span className={"severity " + severityClass(bug.severity)}>
-              {bug.severity}
-            </span>
+            <select
+              value={bug.severity || "Minor"}
+              onChange={(e) =>
+                handleDetailFieldChange("severity", e.target.value)
+              }
+              disabled={!canEdit || busy}
+            >
+              {SEVERITY_LABELS.map((severity) => (
+                <option key={severity} value={severity}>
+                  {severity}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             Priority
-            <span
-              className={
-                "severity " +
-                severityClass(
-                  bug.priority ||
-                    SEVERITY_TO_PRIORITY[bug.severity] ||
-                    "medium",
-                )
+            <select
+              value={
+                bug.priority ||
+                SEVERITY_TO_PRIORITY[bug.severity] ||
+                "medium"
               }
+              onChange={(e) =>
+                handleDetailFieldChange("priority", e.target.value)
+              }
+              disabled={!canEdit || busy}
             >
-              {priorityLabel(
-                bug.priority || SEVERITY_TO_PRIORITY[bug.severity] || "medium",
-              )}
-            </span>
+              {Object.keys(PRIORITY_LABELS).map((priority) => (
+                <option key={priority} value={priority}>
+                  {PRIORITY_LABELS[priority]}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             Assignee
@@ -911,16 +1097,11 @@ function Detail({
             {reassignOpen && (
               <select
                 autoFocus
-                multiple
-                defaultValue={bug.assigneeIds || []}
-                onChange={(e) =>
-                  handleReassign(
-                    Array.from(e.target.selectedOptions, (opt) => opt.value),
-                  )
-                }
+                defaultValue={bug.assigneeIds?.[0] || ""}
+                onChange={(e) => handleReassign(e.target.value)}
                 disabled={busy}
-                style={{ minHeight: "110px" }}
               >
+                <option value="">Unassigned</option>
                 {users
                   .filter(
                     (u) =>
@@ -978,5 +1159,4 @@ function Detail({
     </>
   );
 }
-
 export default Detail;

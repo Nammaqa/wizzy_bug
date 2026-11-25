@@ -1,5 +1,45 @@
 import { PRIORITY_LABELS, SEVERITY_LABELS, STATUS_LABELS } from "./constants";
 
+const ticketFieldKeys = new Set([
+  "_id",
+  "__v",
+  "defectId",
+  "id",
+  "rawId",
+  "title",
+  "description",
+  "severity",
+  "status",
+  "priority",
+  "project",
+  "creator",
+  "assignees",
+  "assignee",
+  "screenshot",
+  "imageUrl",
+  "imagePublicId",
+  "attachments",
+  "fixDescription",
+  "environment",
+  "moduleFeatureName",
+  "buildAppVersion",
+  "releaseVersion",
+  "reproductionRate",
+  "expectedResult",
+  "actualResult",
+  "defectType",
+  "typeOfApplication",
+  "browser",
+  "browserVersion",
+  "history",
+  "comments",
+  "createdAt",
+  "updatedAt",
+  "technicalMemberName",
+  "customFields",
+  "additionalFields",
+]);
+
 export const initialsOf = (name = "") =>
   name.trim()
     ? name
@@ -69,6 +109,21 @@ export function formatBug(ticket) {
   const priority = (ticket.priority || "medium").toLowerCase();
   const status = (ticket.status || "open").toLowerCase();
   const rawId = ticket._id || ticket.id || ticket.rawId || null;
+  const customFields = {
+    ...(ticket.customFields &&
+    typeof ticket.customFields === "object" &&
+    !Array.isArray(ticket.customFields)
+      ? ticket.customFields
+      : {}),
+    ...(ticket.additionalFields &&
+    typeof ticket.additionalFields === "object" &&
+    !Array.isArray(ticket.additionalFields)
+      ? ticket.additionalFields
+      : {}),
+    ...Object.fromEntries(
+      Object.entries(ticket).filter(([key]) => !ticketFieldKeys.has(key)),
+    ),
+  };
   const assignees = Array.isArray(ticket.assignees)
     ? ticket.assignees
     : ticket.assignee
@@ -116,6 +171,8 @@ export function formatBug(ticket) {
     projectKey: ticket.project?.key || "",
     reporter: ticket.creator?.name || "System",
     reporterId: ticket.creator?._id || null,
+    technicalMemberName:
+      ticket.technicalMemberName || ticket.creator?.name || "",
     assignees,
     assignee: assigneeNames.length ? assigneeNames.join(", ") : "Unassigned",
     assigneeIds: assignees.map((assignee) => assignee?._id || assignee).filter(Boolean),
@@ -141,6 +198,7 @@ export function formatBug(ticket) {
     typeOfApplication: ticket.typeOfApplication,
     browser: ticket.browser,
     browserVersion: ticket.browserVersion,
+    customFields,
   };
 }
 

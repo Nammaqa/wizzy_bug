@@ -64,16 +64,34 @@ import BugTable from "../components/BugTable";
 import Stats from "../components/Stats";
 
 function buildTrendData(bugs = []) {
+  const dateFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: IST_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const getISTDateKey = (dateInput) => {
+    const date = new Date(dateInput);
+    if (!Number.isFinite(date.getTime())) return null;
+    const parts = Object.fromEntries(
+      dateFormatter
+        .formatToParts(date)
+        .filter(({ type }) => type !== "literal")
+        .map(({ type, value }) => [type, value]),
+    );
+    return `${parts.year}-${parts.month}-${parts.day}`;
+  };
+  const [year, month, day] = getISTDateKey(new Date())
+    .split("-")
+    .map(Number);
   const days = [];
   for (let offset = 6; offset >= 0; offset -= 1) {
-    const date = new Date();
-    date.setDate(date.getDate() - offset);
+    const date = new Date(Date.UTC(year, month - 1, day - offset, 12));
+    const dateKey = getISTDateKey(date);
     days.push({
       date,
-      count: bugs.filter((bug) => {
-        const createdAt = new Date(bug.createdAt);
-        return createdAt.toDateString() === date.toDateString();
-      }).length,
+      count: bugs.filter((bug) => getISTDateKey(bug.createdAt) === dateKey)
+        .length,
     });
   }
   return days;

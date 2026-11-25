@@ -276,4 +276,3 @@ function AssignBugsPage({ bugs, users, assignBug, setSelected }) {
 // projects (admin), see per-project bug counts, jump into a scoped bug list.
 
 export default AssignBugsPage;
-

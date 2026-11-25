@@ -333,8 +333,8 @@ function ReportPage({
               >
                 <span>
                   {selectedAssigneeNames.length
-                    ? selectedAssigneeNames.join(", ")
-                    : "Select assignees"}
+                  ? selectedAssigneeNames[0]
+                  : "Select assignee"}
                 </span>
                 <ChevronDown size={16} />
               </button>
@@ -343,7 +343,6 @@ function ReportPage({
                   className="assignOptions"
                   role="listbox"
                   aria-label="Assign to"
-                  aria-multiselectable="true"
                 >
                   {assignableUsers.map((candidate) => {
                     const selected = form.assignees.includes(candidate._id);
@@ -354,16 +353,14 @@ function ReportPage({
                         role="option"
                         aria-selected={selected}
                         className="assignOptionItem"
-                        onClick={() =>
+                        onClick={() => {
                           setForm((current) => ({
                             ...current,
-                            assignees: selected
-                              ? current.assignees.filter(
-                                  (id) => id !== candidate._id,
-                                )
-                              : [...current.assignees, candidate._id],
-                          }))
-                        }
+                            assignee: candidate._id,
+                            assignees: [candidate._id],
+                          }));
+                          setAssigneeDropdownOpen(false);
+                        }}
                       >
                         <span className="assignOptionLine">
                           <span className="assignOptionName">

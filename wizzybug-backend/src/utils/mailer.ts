@@ -13,7 +13,7 @@ export const resolveMailServiceUrl = (): string => {
   if (!configuredUrl) return "";
 
   // The deployed mail service exposes its handler at /api/index. Accepting
-  // the shorter /api value avoids silently posting to the Vercel directory.
+  // the shorter /api value avoids silently posting to the Vercel directory....
   if (configuredUrl.endsWith("/api")) return `${configuredUrl}/index`;
   return configuredUrl;
 };
@@ -411,34 +411,83 @@ export const sendBugAssignmentEmail = async (opts: {
     ? `${opts.projectName} (${opts.projectKey})`
     : opts.projectName;
   const isUpdate = opts.event === "updated";
-  const subject = `${isUpdate ? "Bug updated" : "Bug assigned to you"}: ${opts.bugId} - ${opts.title}`;
+  const subject = `${isUpdate ? "Bug updated" : "New bug assignment"}: ${opts.bugId} - ${opts.title}`;
   const changeSummary =
     isUpdate && opts.changedFields?.length
       ? `\nChanged details: ${opts.changedFields.join(", ")}\n`
       : "";
   const actionMessage = isUpdate
-    ? `${opts.assignedBy} updated a bug assigned to you in WizzyBug.`
-    : `${opts.assignedBy} assigned a bug to you in WizzyBug.`;
+    ? `${opts.assignedBy} updated the following bug assigned to you in WizzyBug.`
+    : `${opts.assignedBy} assigned the following bug to you in WizzyBug.`;
   const priorityLabel = getPriorityEmailLabel(opts.priority);
   const body = `Hi ${opts.assigneeName},
 
+${isUpdate ? "This bug assignment has been updated." : "You have been assigned a new bug."}
+
 ${actionMessage}
 
-Bug: ${opts.bugId} - ${opts.title}
+BUG DETAILS
+Bug ID: ${opts.bugId}
+Title: ${opts.title}
 Project: ${project}
 Priority: ${priorityLabel}
-Severity: ${opts.severity}
-${changeSummary}
+Severity: ${opts.severity}${changeSummary}
 
-Description:
+DESCRIPTION
 ${opts.description || "No description provided."}
 
-Open WizzyBug: ${opts.appUrl}`;
+Please review the bug details and update its status in WizzyBug:
+${opts.appUrl}
+
+Regards,
+The WizzyBug Team`;
   const changesHtml =
     isUpdate && opts.changedFields?.length
-      ? `<p><b>Changed details:</b> ${opts.changedFields.map(escapeHtml).join(", ")}</p>`
+      ? `<div style="margin:0 0 24px;padding:12px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;color:#9a3412;font-size:14px;line-height:1.5;"><strong>Updated fields:</strong> ${opts.changedFields.map(escapeHtml).join(", ")}</div>`
       : "";
-  const html = `<h2>${isUpdate ? "Bug updated" : "Bug assigned to you"}</h2><p>Hi ${escapeHtml(opts.assigneeName)},</p><p><b>${escapeHtml(opts.assignedBy)}</b> ${isUpdate ? "updated a bug assigned to you" : "assigned a bug to you"} in WizzyBug.</p><table><tr><td><b>Bug</b></td><td>${escapeHtml(opts.bugId)} - ${escapeHtml(opts.title)}</td></tr><tr><td><b>Project</b></td><td>${escapeHtml(project)}</td></tr><tr><td><b>Priority</b></td><td>${escapeHtml(priorityLabel)}</td></tr><tr><td><b>Severity</b></td><td>${escapeHtml(opts.severity)}</td></tr></table>${changesHtml}<h3>Description</h3><p>${escapeHtml(opts.description || "No description provided.").replace(/\n/g, "<br>")}</p><p><a href="${escapeHtml(opts.appUrl)}">Open WizzyBug</a></p>`;
+  const description = escapeHtml(
+    opts.description || "No description provided.",
+  ).replace(/\n/g, "<br>");
+  const html = `<!doctype html>
+<html lang="en">
+  <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f4f6;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+            <tr>
+              <td style="padding:24px 32px;background:#312e81;color:#ffffff;">
+                <p style="margin:0 0 8px;font-size:12px;letter-spacing:1px;text-transform:uppercase;opacity:.85;">WizzyBug</p>
+                <h1 style="margin:0;font-size:24px;line-height:1.3;">${isUpdate ? "Bug updated" : "Bug assigned to you"}</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px;">
+                <p style="margin:0 0 16px;font-size:16px;line-height:1.5;">Hi ${escapeHtml(opts.assigneeName)},</p>
+                <p style="margin:0 0 24px;font-size:15px;line-height:1.6;"><strong>${escapeHtml(opts.assignedBy)}</strong> ${isUpdate ? "updated a bug assigned to you" : "assigned a bug to you"} in WizzyBug. Please review the details below.</p>
+                ${changesHtml}
+                <h2 style="margin:0 0 12px;font-size:17px;color:#111827;">Bug details</h2>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e5e7eb;border-radius:6px;border-collapse:separate;overflow:hidden;font-size:14px;">
+                  <tr style="background:#f9fafb;"><td style="padding:11px 14px;color:#6b7280;width:30%;"><strong>Bug ID</strong></td><td style="padding:11px 14px;">${escapeHtml(opts.bugId)}</td></tr>
+                  <tr><td style="padding:11px 14px;color:#6b7280;"><strong>Title</strong></td><td style="padding:11px 14px;">${escapeHtml(opts.title)}</td></tr>
+                  <tr style="background:#f9fafb;"><td style="padding:11px 14px;color:#6b7280;"><strong>Project</strong></td><td style="padding:11px 14px;">${escapeHtml(project)}</td></tr>
+                  <tr><td style="padding:11px 14px;color:#6b7280;"><strong>Priority</strong></td><td style="padding:11px 14px;">${escapeHtml(priorityLabel)}</td></tr>
+                  <tr style="background:#f9fafb;"><td style="padding:11px 14px;color:#6b7280;"><strong>Severity</strong></td><td style="padding:11px 14px;">${escapeHtml(opts.severity)}</td></tr>
+                </table>
+                <h2 style="margin:28px 0 12px;font-size:17px;color:#111827;">Description and reproduction steps</h2>
+                <div style="padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;line-height:1.6;word-break:break-word;">${description}</div>
+                <p style="margin:28px 0 0;">
+                  <a href="${escapeHtml(opts.appUrl)}" style="display:inline-block;padding:12px 20px;background:#4f46e5;border-radius:6px;color:#ffffff;font-size:14px;font-weight:bold;text-decoration:none;">Open bug in WizzyBug</a>
+                </p>
+                <p style="margin:24px 0 0;color:#6b7280;font-size:12px;line-height:1.5;">This is an automated notification from WizzyBug. Please do not reply to this email.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
 
   if (smtpTransport) {
     try {

@@ -10,6 +10,7 @@ export interface IUser extends Document {
   emailVerified?: boolean;
   emailVerificationToken?: string;
   emailVerificationExpiresAt?: Date;
+  emailVerificationTokenUsedHash?: string;
   inviteToken?: string;
   resetToken?: string;
   resetTokenExpiresAt?: Date;
@@ -30,6 +31,7 @@ const UserSchema: Schema = new Schema({
   emailVerified: { type: Boolean },
   emailVerificationToken: { type: String },
   emailVerificationExpiresAt: { type: Date },
+  emailVerificationTokenUsedHash: { type: String },
   inviteToken: { type: String },
   resetToken: { type: String },
   resetTokenExpiresAt: { type: Date }
